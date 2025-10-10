@@ -10,5 +10,4 @@ const RegisterScreen = () => {
   );
 };
 
-// *** THIS LINE IS CRITICAL ***
 export default RegisterScreen;
