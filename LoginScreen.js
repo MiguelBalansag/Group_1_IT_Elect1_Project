@@ -51,7 +51,7 @@ const LoginScreen = () => {
 
             if (result.success) {
                 // In a real app, this would replace the AuthStack with the TabNavigator
-                navigation.replace('Tab'); 
+                navigation.replace('HomeTabs'); 
             } else {
                 Alert.alert('Login Failed', result.error);
             }
