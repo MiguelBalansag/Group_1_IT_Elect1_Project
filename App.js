@@ -1,21 +1,35 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+// App.js (The main entry file for your application)
+import * as React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 
-export default function App() {
+// 1. Import TabNavigator and Auth Screens from the current directory
+import TabNavigator from './TabNavigator'; 
+import LoginScreen from './LoginScreen';
+import RegisterScreen from './RegisterScreen';
+
+const Stack = createStackNavigator();
+
+function App() {
   return (
-    <View style={styles.container}>
-      <Text>Balansag, Miguel Lourence B.</Text>
-      <Text>BSIT 3 - BLOCK 1</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator 
+        // Start on the Login screen
+        initialRouteName="Login"
+        screenOptions={{ headerShown: false }} 
+      >
+        
+        {/* === Authentication Stack === */}
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        
+        {/* === Main App Content (The Tab Bar) === */}
+        {/* When the user logs in, they will replace the current screen with this 'HomeTabs' screen.
+            'HomeTabs' renders your entire bottom tab navigation system. */}
+        <Stack.Screen name="HomeTabs" component={TabNavigator} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default App;
