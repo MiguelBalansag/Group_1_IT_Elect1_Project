@@ -1,12 +1,10 @@
-
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const GenerateScreen = () => {
+const DashboardScreen = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to FlashGenius</Text>
-      <Text>This is where you generate you flascard</Text>
+      <Text>DashboardScreen</Text>
     </View>
   );
 };
@@ -17,11 +15,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
 });
 
-export default GenerateScreen;
+export default DashboardScreen;
