@@ -1,11 +1,12 @@
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 const GenerateScreen = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Would you like to Generate </Text>
-      <Text>This is where yo make your flashcard.</Text>
+      <Text style={styles.title}>Welcome to GenerateScreen</Text>
+      <Text>This is where you generate you flascard</Text>
     </View>
   );
 };
