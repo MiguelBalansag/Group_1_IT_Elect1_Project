@@ -10,7 +10,7 @@ import {
     SafeAreaView, // To ensure content fits under the notch/status bar
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 // --- SIMULATED DATA & LOGIC ---
 
 // 🚨 Mock function: Replace this with your actual API call
@@ -115,7 +115,7 @@ const RegisterScreen = () => {
                     >
                       
                        <Text style={styles.showText}>Show</Text>
-                        <Icon name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#777" />
+                        <MaterialCommunityIcons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#777" />
                     </TouchableOpacity>
                 </View>
 

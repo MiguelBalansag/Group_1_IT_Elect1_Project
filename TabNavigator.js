@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/Ionicons'; // Now fully supported!
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 
 // Import your screen components (ensure these paths are correct)
@@ -22,14 +22,14 @@ function TabNavigator() {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Generate') {
             // Using 'add-circle' for the central "Generate" button/tab
-            iconName = focused ? 'add-circle' : 'add-circle-outline';
+            iconName = focused ? 'file-upload' : 'file-upload-outline';
           } else if (route.name === 'Progress') {
             // Using 'stats-chart' for the "Progress" tab
-            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+            iconName = focused ? 'chart-line' : 'chart-line-variant';
           }
 
           // Render the vector icon
-          return <Icon name={iconName} size={size} color={color} />;
+          return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
         },
         
         // --- VISUAL STYLING ---

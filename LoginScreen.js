@@ -11,7 +11,7 @@ import {
     SafeAreaView, // To ensure content fits under the notch/status bar
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons'; // Need to install this package
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // --- SIMULATED DATA & LOGIC ---
 
@@ -106,7 +106,7 @@ const LoginScreen = () => {
                     >
                         {/* The 'Show' text and circular icon */}
                         <Text style={styles.showText}>Show</Text>
-                        <Icon name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#777" />
+                        <MaterialCommunityIcons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#777" />
                     </TouchableOpacity>
                 </View>
 
