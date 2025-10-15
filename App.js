@@ -28,11 +28,14 @@ function App() {
         
         {/* === Authentication Stack (No Context needed here) === */}
         <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        
+        <Stack.Screen name="Register" component={RegisterScreen} />        
         {/* === Main App Content (The Tab Bar) === */}
         {/* We use the custom wrapper component defined above */}
         <Stack.Screen name="HomeTabs" component={HomeTabsWithContext} />
+=======
+  
+        <Stack.Screen name="HomeTabs" component={TabNavigator} />
+>>>>>>> aba8b80 (edit app.js)
       </Stack.Navigator>
     </NavigationContainer>
   );
