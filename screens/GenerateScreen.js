@@ -132,7 +132,7 @@ const GenerateScreen = () => {
             </Text>
 
             {/* 4. Simple Definition Toggle */}
-       <View style={styles.optionRow}>
+            <View style={styles.optionRow}>
                 <Text style={styles.optionLabel}>Simple Definition</Text>
                 <Switch
                     trackColor={{ false: "#767577", true: "#007AFF" }}
