@@ -32,7 +32,6 @@ function App() {
         {/* === Main App Content (The Tab Bar) === */}
         {/* We use the custom wrapper component defined above */}
         <Stack.Screen name="HomeTabs" component={HomeTabsWithContext} />
-        <Stack.Screen name="HomeTabs" component={TabNavigator} />
       </Stack.Navigator>
     </NavigationContainer>
   );
