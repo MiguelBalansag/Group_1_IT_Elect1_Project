@@ -25,11 +25,8 @@ function App() {
         initialRouteName="Login"
         screenOptions={{ headerShown: false }} 
       >
-<<<<<<< HEAD
         
         {/* === Authentication Stack (No Context needed here) === */}
-=======
- >>>>>>>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />        
         {/* === Main App Content (The Tab Bar) === */}
