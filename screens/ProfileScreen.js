@@ -114,7 +114,7 @@ const ProfileScreen = () => {
                     <MaterialCommunityIcons name="link-variant" size={24} color={colors.subtext} style={styles.settingIcon} />
                     <TextInput
                         style={[styles.linkInput, { color: colors.text }]}
-                        placeholder="Enter link (URL/text) to generate from"
+                        placeholder="Enter link (URL/code) to generate from"
                         placeholderTextColor={colors.subtext}
                         value={inputLink}
                         onChangeText={setInputLink}
@@ -181,6 +181,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: 20,
+        marginTop: Platform.OS === 'ios' ? 60 : 40,
     },
     backButton: {
         padding: 5,

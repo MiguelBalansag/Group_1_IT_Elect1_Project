@@ -4,15 +4,15 @@ import React, { createContext, useState, useContext } from 'react';
 let deckIdCounter = 100; 
 
 // 1. Define the Context
-// 🚨 FIX: Initialize context value to match the structure provided by the Provider
 export const DeckContext = createContext({
-    decks: [], // Initialize decks as an empty array here
+    decks: [],
     addDeck: () => {},
+    // 🚨 NEW: Add removeDeck function placeholder
+    removeDeck: () => {},
 });
 
 // 2. Define the Provider Component
 export const DeckProvider = ({ children }) => {
-    // 🚨 FIX: Initialize the state with an empty array. This replaces `initialDecks`. 🚨
     const [decks, setDecks] = useState([]);
 
     // Function to add a newly generated deck
@@ -30,10 +30,15 @@ export const DeckProvider = ({ children }) => {
         setDecks(prevDecks => [newDeck, ...prevDecks]); 
         return newDeck;
     };
+    
+    // 🚨 NEW: Function to remove a deck by its ID 🚨
+    const removeDeck = (deckId) => {
+        setDecks(prevDecks => prevDecks.filter(deck => deck.id !== deckId));
+    };
 
     return (
-        // 🚨 FIX: Pass the state variable `decks` and the function `addDeck` to the value 🚨
-        <DeckContext.Provider value={{ decks, addDeck }}>
+        // 🚨 NEW: Include removeDeck in the context value 🚨
+        <DeckContext.Provider value={{ decks, addDeck, removeDeck }}>
             {children}
         </DeckContext.Provider>
     );
