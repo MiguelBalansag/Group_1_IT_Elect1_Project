@@ -6,8 +6,8 @@ import ProfileScreen from './screens/ProfileScreen'
 import TabNavigator from './TabNavigator'; 
 import LoginScreen from './LoginScreen';
 import RegisterScreen from './RegisterScreen';
+import Splash from './FirstPage/Splash'; 
 import { DeckProvider } from './DeckContext'; 
-// 🚨 NEW: Import the ThemeProvider 🚨
 import { ThemeProvider } from './ThemeContext';
 
 const Stack = createStackNavigator();
@@ -22,15 +22,16 @@ const HomeTabsWithContext = () => (
 
 function App() {
   return (
-    // 🚨 WRAPPER: ThemeProvider must be outside NavigationContainer
-    // to give context to all components/screens inside the navigator 🚨
     <ThemeProvider>
       <NavigationContainer>
         <Stack.Navigator 
-          initialRouteName="Login"
+          initialRouteName="Splash"
           screenOptions={{ headerShown: false }} 
         >
           
+          {/* === Initial Screen (Splash) === */}
+          <Stack.Screen name="Splash" component={Splash} />
+
           {/* === Authentication Stack === */}
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />  
@@ -43,7 +44,8 @@ function App() {
           
         </Stack.Navigator>
       </NavigationContainer>
-    </ThemeProvider>
+ 
+   </ThemeProvider>
   );
 }
 

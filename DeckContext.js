@@ -1,38 +1,19 @@
 import React, { createContext, useState, useContext } from 'react';
+
+// Use a counter for ID generation (better to use Date.now() or a UUID for production)
 let deckIdCounter = 100; 
 
-// Initial mock data
-const initialDecks = [
-    {
-        id: 1,
-        title: 'Organic Chemistry Terms',
-        source: 'Chem101.pdf',
-        cardCount: 52,
-        mastery: 80, // % mastered
-        progress: 70, // % total progress
-        status: 'Mastered',
-    },
-    {
-        id: 2,
-        title: 'Lord of the Mysteries',
-        source: 'Lotm.pdf',
-        cardCount: 40,
-        mastery: 100,
-        progress: 100,
-        status: 'Mastered',
-    },
-];
-
 // 1. Define the Context
+// 🚨 FIX: Initialize context value to match the structure provided by the Provider
 export const DeckContext = createContext({
-    decks: initialDecks,
+    decks: [], // Initialize decks as an empty array here
     addDeck: () => {},
 });
 
 // 2. Define the Provider Component
 export const DeckProvider = ({ children }) => {
-    // State now holds the dynamic deck data
-    const [decks, setDecks] = useState(initialDecks);
+    // 🚨 FIX: Initialize the state with an empty array. This replaces `initialDecks`. 🚨
+    const [decks, setDecks] = useState([]);
 
     // Function to add a newly generated deck
     const addDeck = (newDeckData) => {
@@ -51,6 +32,7 @@ export const DeckProvider = ({ children }) => {
     };
 
     return (
+        // 🚨 FIX: Pass the state variable `decks` and the function `addDeck` to the value 🚨
         <DeckContext.Provider value={{ decks, addDeck }}>
             {children}
         </DeckContext.Provider>
