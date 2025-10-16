@@ -25,7 +25,7 @@ const GenerateScreen = () => {
     // --- State Management ---
     const [deckName, setDeckName] = useState(''); 
     const [simpleDefinition, setSimpleDefinition] = useState(false);
-    const [numberOfCards, setNumberOfCards] = useState(50); 
+    const [numberOfCards, setNumberOfCards] = useState(35); 
     const [selectedFileName, setSelectedFileName] = useState('No file selected'); 
     const [selectedFileUri, setSelectedFileUri] = useState(null); 
     const [isLoading, setIsLoading] = useState(false);
@@ -82,7 +82,7 @@ const GenerateScreen = () => {
             Alert.alert("Generating...", "Simulating AI processing, please wait.");
             
             // SIMULATE AI processing delay
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
             // SIMULATE SUCCESSFUL RESPONSE
             const result = { success: true, cardCount: numberOfCards }; 
@@ -172,7 +172,7 @@ const GenerateScreen = () => {
             <Text style={[styles.label, { color: colors.text }]}>Number of Cards ({Math.round(numberOfCards)} / 60)</Text>
             <Slider
                 style={styles.slider}
-                minimumValue={40}
+                minimumValue={10}
                 maximumValue={60}
                 step={1}
                 value={numberOfCards}
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
     generateButtonText: {
-        color: '#FFFFFF',
+        color: 'black',
         fontSize: 18,
         fontWeight: '600',
     },

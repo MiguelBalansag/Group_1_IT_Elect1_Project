@@ -25,8 +25,8 @@ const ProfileScreen = () => {
     const [profileImage, setProfileImage] = useState(null); 
 
     const userData = {
-        name: 'Alex Johnson',
-        email: 'alex.johnson@email.com',
+        name: 'Group1',
+        email: 'group1@gmail.com',
     };
 
     const handleEditProfile = async () => {
