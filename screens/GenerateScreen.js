@@ -10,12 +10,17 @@ import {
 } from 'react-native';
 
 import * as DocumentPicker from 'expo-document-picker'; 
-import { MaterialCommunityIcons } from '@expo/vector-icons'; // 🚨 Expo Icon usage
+import { MaterialCommunityIcons } from '@expo/vector-icons'; 
 import Slider from '@react-native-community/slider';
 import { useNavigation } from '@react-navigation/native';
 import { useDecks } from '../DeckContext'; 
+// 🚨 NEW: Import the useTheme hook 🚨
+import { useTheme } from '../ThemeContext';
 
 const GenerateScreen = () => {
+    // --- Theme Context Hook ---
+    const { colors, theme } = useTheme();
+
     // --- State Management ---
     const [deckName, setDeckName] = useState(''); 
     const [simpleDefinition, setSimpleDefinition] = useState(false);
@@ -28,6 +33,7 @@ const GenerateScreen = () => {
     const navigation = useNavigation();
     const { addDeck } = useDecks(); 
 
+    // --- Functions (Unchanged) ---
     const handleSelectFile = async () => {
         if (isLoading) return;
 
@@ -104,40 +110,56 @@ const GenerateScreen = () => {
     };
 
     return (
-        <View style={styles.container}>
+        // 🚨 Apply dynamic background color 🚨
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             {/* 1. Select PDF File Button */}
             <TouchableOpacity 
-                style={[styles.selectFileButton, isLoading && styles.selectFileButtonDisabled]} 
+                style={[
+                    styles.selectFileButton, 
+                    { backgroundColor: colors.primary }, // Default Primary Color
+                    isLoading && styles.selectFileButtonDisabled // Overridden by disabled style if true
+                ]} 
                 onPress={handleSelectFile}
                 disabled={isLoading}
             >
-                {/* 🚨 Expo Icon usage */}
-                <MaterialCommunityIcons name="cloud-upload-outline" size={24} color="#FFFFFF" />
+                <MaterialCommunityIcons name="cloud-upload-outline" size={24} color="#black" />
                 <Text style={styles.selectFileButtonText}>Select PDF/DOC File</Text>
             </TouchableOpacity>
-
             {/* 2. Deck Name Input */}
-            <Text style={styles.label}>Deck Name</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Deck Name</Text>
             <TextInput
-                style={styles.textInput}
+                style={[
+                    styles.textInput, 
+                    { 
+                        backgroundColor: colors.card, 
+                        borderColor: colors.border,
+                        color: colors.text
+                    }
+                ]}
                 value={deckName}
                 onChangeText={setDeckName}
                 placeholder="Enter deck name"
+                placeholderTextColor={colors.subtext}
                 editable={!isLoading}
             />
 
             {/* 3. Generated From Indicator */}
-            <Text style={styles.generatedFromFileText}>
+            <Text style={[styles.generatedFromFileText, { color: colors.subtext }]}>
                 Generated from "{selectedFileName}"
             </Text>
 
             {/* 4. Simple Definition Toggle */}
-            <View style={styles.optionRow}>
-                <Text style={styles.optionLabel}>Simple Definition</Text>
+            <View style={[
+                styles.optionRow, 
+                { 
+                    backgroundColor: colors.card, 
+                    borderColor: colors.border 
+                }
+            ]}>
+                <Text style={[styles.optionLabel, { color: colors.text }]}>Simple Definition</Text>
                 <Switch
-                    trackColor={{ false: "#767577", true: "#007AFF" }}
-                    thumbColor={simpleDefinition ? "#f5dd4b" : "#f4f3f4"}
-                    ios_backgroundColor="#3e3e3e"
+                    trackColor={{ false: colors.border, true: colors.primary }} // Use theme colors
+                    thumbColor={theme === 'dark' ? colors.card : '#f4f3f4'} // Use white/light for thumb
                     onValueChange={setSimpleDefinition}
                     value={simpleDefinition}
                     disabled={isLoading}
@@ -145,7 +167,7 @@ const GenerateScreen = () => {
             </View>
 
             {/* 5. Number of Cards Slider */}
-            <Text style={styles.label}>Number of Cards ({Math.round(numberOfCards)} / 60)</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Number of Cards ({Math.round(numberOfCards)} / 60)</Text>
             <Slider
                 style={styles.slider}
                 minimumValue={40}
@@ -153,17 +175,18 @@ const GenerateScreen = () => {
                 step={1}
                 value={numberOfCards}
                 onValueChange={setNumberOfCards}
-                minimumTrackTintColor="#007AFF"
-                maximumTrackTintColor="#000000"
-                thumbTintColor="#007AFF"
+                minimumTrackTintColor={colors.primary} // Use theme primary color
+                maximumTrackTintColor={colors.border} // Use theme border color
+                thumbTintColor={colors.primary} // Use theme primary color
                 disabled={isLoading}
             />
-            <Text style={styles.sliderValueText}>{Math.round(numberOfCards)}</Text>
+            <Text style={[styles.sliderValueText, { color: colors.text }]}>{Math.round(numberOfCards)}</Text>
 
             {/* 6. Generate Flashcards Button */}
             <TouchableOpacity 
                 style={[
                     styles.generateButton, 
+                    { backgroundColor: colors.primary }, // Default Primary Color
                     (isLoading || selectedFileName === 'No file selected') && styles.generateButtonDisabled
                 ]} 
                 onPress={handleGenerateFlashcards}
@@ -177,10 +200,12 @@ const GenerateScreen = () => {
     );
 };
 
+// 🚨 NOTE: StyleSheet.create is kept for structure, but hardcoded colors are 
+// overridden inline in the JSX using the 'colors' object. 🚨
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
+        // backgroundColor: '#F5F5F5', // Overridden inline
         padding: 20,
         paddingTop: 40, 
     },
@@ -188,7 +213,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#007AFF',
+        // backgroundColor: '#007AFF', // Overridden inline
         padding: 15,
         borderRadius: 10,
         marginBottom: 30,
@@ -199,10 +224,10 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     selectFileButtonDisabled: {
-        backgroundColor: '#6C9FE2',
+        backgroundColor: '#A0A0A0', // Darker gray for disabled state
     },
     selectFileButtonText: {
-        color: '#FFFFFF',
+        color: 'black', // Should remain white for contrast against the primary color button
         fontSize: 18,
         fontWeight: '600',
         marginLeft: 10,
@@ -210,13 +235,13 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#333',
+        // color: '#333', // Overridden inline
         marginBottom: 8,
     },
     textInput: {
-        backgroundColor: '#FFFFFF',
+        // backgroundColor: '#FFFFFF', // Overridden inline
         borderWidth: 1,
-        borderColor: '#E0E0E0',
+        // borderColor: '#E0E0E0', // Overridden inline
         borderRadius: 8,
         padding: 12,
         fontSize: 16,
@@ -229,7 +254,7 @@ const styles = StyleSheet.create({
     },
     generatedFromFileText: {
         fontSize: 14,
-        color: '#666',
+        // color: '#666', // Overridden inline
         textAlign: 'left',
         marginBottom: 25,
         fontStyle: 'italic',
@@ -238,9 +263,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        // backgroundColor: '#FFFFFF', // Overridden inline
         borderWidth: 1,
-        borderColor: '#E0E0E0',
+        // borderColor: '#E0E0E0', // Overridden inline
         borderRadius: 8,
         padding: 15,
         marginBottom: 20,
@@ -252,7 +277,7 @@ const styles = StyleSheet.create({
     },
     optionLabel: {
         fontSize: 16,
-        color: '#333',
+        // color: '#333', // Overridden inline
         fontWeight: '500',
     },
     slider: {
@@ -264,11 +289,11 @@ const styles = StyleSheet.create({
     sliderValueText: {
         fontSize: 16,
         textAlign: 'center',
-        color: '#333',
+        // color: '#333', // Overridden inline
         marginBottom: 30,
     },
     generateButton: {
-        backgroundColor: '#007AFF',
+        // backgroundColor: '#007AFF', // Overridden inline
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
@@ -280,7 +305,7 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     generateButtonDisabled: {
-        backgroundColor: '#A0A0A0',
+        backgroundColor: '#A0A0A0', // Darker gray for disabled state
         opacity: 0.7,
     },
     generateButtonText: {

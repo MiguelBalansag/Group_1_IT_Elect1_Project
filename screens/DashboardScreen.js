@@ -8,14 +8,17 @@ import {
     TouchableOpacity, 
     Dimensions 
 } from 'react-native';
-// 🚨 Using Expo compatible icons
+import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons'; 
-import { useDecks } from '../DeckContext'; // 🚨 Consume Context
+import { useDecks } from '../DeckContext'; 
+// 🚨 NEW: Import the useTheme hook (adjust path if needed)
+import { useTheme } from '../ThemeContext'; 
 
 // Helper component for the progress bar
-const ProgressBar = ({ progress, color }) => {
+// 🚨 UPDATED: Accepts theme colors for background 🚨
+const ProgressBar = ({ progress, color, themeColors }) => {
     return (
-        <View style={styles.progressBarContainer}>
+        <View style={[styles.progressBarContainer, { backgroundColor: themeColors.border }]}>
             <View 
                 style={[
                     styles.progressBarFill, 
@@ -27,37 +30,49 @@ const ProgressBar = ({ progress, color }) => {
 };
 
 const DashboardScreen = () => {
+    const navigation = useNavigation(); 
+    // 🚨 NEW: Consume the theme context 🚨
+    const { colors } = useTheme();
+    
     // Get dynamic decks from context
     const { decks } = useDecks(); 
     const [searchText, setSearchText] = React.useState('');
 
+    // 🚨 UPDATED: DeckCard now uses theme colors 🚨
     const DeckCard = ({ deck }) => {
-        const masteryColor = deck.mastery >= 75 ? '#4CAF50' : deck.mastery >= 50 ? '#FFC107' : '#F44336';
+        // Mastery colors remain hardcoded as they represent a specific status (Success/Warning/Error)
+        const masteryColor = deck.mastery >= 75 ? colors.status : deck.mastery >= 50 ? '#FFC107' : '#F44336';
         
         return (
-            <TouchableOpacity style={styles.card}>
-                <Text style={styles.cardTitle}>{deck.title}</Text>
+            // Apply card and border colors
+            <TouchableOpacity style={[styles.card, { backgroundColor: colors.card, borderLeftColor: colors.primary }]}>
+                {/* Apply text color */}
+                <Text style={[styles.cardTitle, { color: colors.text }]}>{deck.title}</Text>
                 
-                <Text style={styles.cardSource}>
+                {/* Apply subtext color */}
+                <Text style={[styles.cardSource, { color: colors.subtext }]}>
                     {deck.status === 'Imported' ? 'Imported from' : 'Generated from'} "{deck.source}"
                 </Text>
                 
                 <View style={styles.cardDetailsRow}>
-                    <Text style={styles.cardDetailText}>{deck.cardCount} Cards</Text>
+                    {/* Apply text color */}
+                    <Text style={[styles.cardDetailText, { color: colors.subtext }]}>{deck.cardCount} Cards</Text>
                     
                     <View style={styles.masteryContainer}>
                         <Text style={[styles.masteryText, { color: masteryColor }]}>
                             {deck.mastery}% Mastered
                         </Text>
-                        <ProgressBar progress={deck.mastery} color={masteryColor} />
+                        {/* Pass theme colors to ProgressBar */}
+                        <ProgressBar progress={deck.mastery} color={masteryColor} themeColors={colors} />
                     </View>
                 </View>
 
-                <View style={styles.progressRow}>
-                    <Text style={styles.progressText}>
+                {/* Apply border and text colors */}
+                <View style={[styles.progressRow, { borderTopColor: colors.border }]}>
+                    <Text style={[styles.progressText, { color: colors.primary }]}>
                         {deck.status === 'Needs Review' ? 'Needs Review' : `${deck.progress}% Progress`}
                     </Text>
-                    <Text style={styles.progressValue}>
+                    <Text style={[styles.progressValue, { color: colors.subtext }]}>
                          {deck.progress}%
                     </Text>
                 </View>
@@ -66,26 +81,28 @@ const DashboardScreen = () => {
     };
 
     return (
-        <View style={styles.container}>
-            {/* Header: Welcome & Profile Icon */}
+        // 🚨 Apply primary background color 🚨
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            {/* Header: Apply text and icon color */}
             <View style={styles.header}>
-                <Text style={styles.welcomeText}>Welcome, Group1!</Text>
-                <TouchableOpacity style={styles.profileIcon}>
-                    {/* 🚨 Expo Icon usage */}
-                    <MaterialCommunityIcons name="account-circle-outline" size={30} color="#333" />
+                <Text style={[styles.welcomeText, { color: colors.text }]}>Welcome, Group1!</Text>
+                <TouchableOpacity 
+                    onPress={() => navigation.navigate('Profile')} 
+                    style={styles.profileIcon}
+                >
+                    <MaterialCommunityIcons name="account-circle-outline" size={30} color={colors.text} />
                 </TouchableOpacity>
             </View>
 
-            {/* Search Bar */}
-            <View style={styles.searchBarContainer}>
-                {/* 🚨 Expo Icon usage */}
-                <MaterialCommunityIcons name="magnify" size={24} color="#757575" style={styles.searchIcon} />
+            {/* Search Bar: Apply card, border, and subtext colors */}
+            <View style={[styles.searchBarContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <MaterialCommunityIcons name="magnify" size={24} color={colors.subtext} style={styles.searchIcon} />
                 <TextInput
-                    style={styles.searchInput}
+                    style={[styles.searchInput, { color: colors.text }]}
                     placeholder="Search decks..."
                     value={searchText}
                     onChangeText={setSearchText}
-                    placeholderTextColor="#757575"
+                    placeholderTextColor={colors.subtext}
                 />
             </View>
 
@@ -95,7 +112,6 @@ const DashboardScreen = () => {
                     <DeckCard key={deck.id} deck={deck} />
                 ))}
             </ScrollView>
-    
         </View>
     );
 };
@@ -103,7 +119,7 @@ const DashboardScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F5F5',
+        // backgroundColor: '#F5F5F5', // Overridden inline
         paddingHorizontal: 20,
         paddingTop: Dimensions.get('window').height > 800 ? 60 : 40,
     },
@@ -116,7 +132,7 @@ const styles = StyleSheet.create({
     welcomeText: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#333',
+        // color: '#333', // Overridden inline
     },
     profileIcon: {
         padding: 5,
@@ -124,12 +140,12 @@ const styles = StyleSheet.create({
     searchBarContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#FFFFFF',
+        // backgroundColor: '#FFFFFF', // Overridden inline
         borderRadius: 12,
         marginBottom: 25,
         paddingHorizontal: 10,
         borderWidth: 1,
-        borderColor: '#E0E0E0',
+        // borderColor: '#E0E0E0', // Overridden inline
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
@@ -143,19 +159,19 @@ const styles = StyleSheet.create({
         flex: 1,
         height: 45,
         fontSize: 16,
-        color: '#333',
+        // color: '#333', // Overridden inline
     },
     deckList: {
         flex: 1,
         marginBottom: 20, 
     },
     card: {
-        backgroundColor: '#FFFFFF',
+        // backgroundColor: '#FFFFFF', // Overridden inline
         padding: 20,
         borderRadius: 12,
         marginBottom: 15,
         borderLeftWidth: 5,
-        borderLeftColor: '#007AFF',
+        // borderLeftColor: '#007AFF', // Overridden inline
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -165,12 +181,12 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#333',
+        // color: '#333', // Overridden inline
         marginBottom: 5,
     },
     cardSource: {
         fontSize: 13,
-        color: '#666',
+        // color: '#666', // Overridden inline
         marginBottom: 15,
     },
     cardDetailsRow: {
@@ -181,7 +197,7 @@ const styles = StyleSheet.create({
     },
     cardDetailText: {
         fontSize: 14,
-        color: '#444',
+        // color: '#444', // Overridden inline
     },
     masteryContainer: {
         alignItems: 'flex-end',
@@ -195,7 +211,7 @@ const styles = StyleSheet.create({
     progressBarContainer: {
         height: 6,
         width: '100%',
-        backgroundColor: '#E0E0E0',
+        // backgroundColor: '#E0E0E0', // Overridden inline
         borderRadius: 3,
         overflow: 'hidden',
     },
@@ -209,17 +225,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingTop: 10,
         borderTopWidth: 1,
-        borderTopColor: '#F0F0F0',
+        // borderTopColor: '#F0F0F0', // Overridden inline
         marginTop: 5,
     },
     progressText: {
         fontSize: 14,
-        color: '#007AFF',
+        // color: '#007AFF', // Overridden inline
         fontWeight: '600',
     },
     progressValue: {
         fontSize: 14,
-        color: '#666',
+        // color: '#666', // Overridden inline
     }
 });
 

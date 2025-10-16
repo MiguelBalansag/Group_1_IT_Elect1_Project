@@ -1,9 +1,10 @@
-// TabNavigator.js
-
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/Ionicons'; // Now fully supported!
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
+
+// 🚨 NEW: Import the useTheme hook 🚨
+import { useTheme } from './ThemeContext'; 
 
 // Import your screen components (ensure these paths are correct)
 import DashboardScreen from './screens/DashboardScreen';
@@ -13,6 +14,15 @@ import ProgressScreen from './screens/ProgressScreen';
 const Tab = createBottomTabNavigator();
 
 function TabNavigator() {
+  // 🚨 Consume the theme context 🚨
+  const { colors, theme } = useTheme();
+
+  // Define dynamic colors based on the theme context
+  const activeColor = colors.primary;
+  const inactiveColor = colors.subtext;
+  const tabBarBackgroundColor = colors.card;
+  const tabBarBorderColor = colors.border;
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -24,30 +34,34 @@ function TabNavigator() {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Generate') {
             // Using 'add-circle' for the central "Generate" button/tab
-            iconName = focused ? 'add-circle' : 'add-circle-outline';
+            iconName = focused ? 'file-upload' : 'file-upload-outline';
           } else if (route.name === 'Progress') {
             // Using 'stats-chart' for the "Progress" tab
-            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+            iconName = focused ? 'chart-line' : 'chart-line-variant';
           }
 
           // Render the vector icon
-          return <Icon name={iconName} size={size} color={color} />;
+          return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
         },
         
         // --- VISUAL STYLING ---
-        tabBarActiveTintColor: '#2A5DFF',   // Blue color for active tab
-        tabBarInactiveTintColor: 'gray',     // Gray color for inactive tab
+        // 🚨 Dynamic Colors Applied Here 🚨
+        tabBarActiveTintColor: activeColor,   
+        tabBarInactiveTintColor: inactiveColor,     
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
         },
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',        // White background
-          height: Platform.OS === 'ios' ? 90 : 60, // Adjust height for better look
-          paddingBottom: Platform.OS === 'ios' ? 30 : 5, // Account for notch/safe area
-          borderTopWidth: 0,                 // Remove default border line
-          elevation: 10,                     // Shadow for Android
-          shadowColor: '#000',               // Shadow for iOS
+          // 🚨 Apply dynamic background and border colors 🚨
+          backgroundColor: tabBarBackgroundColor,        
+          borderTopColor: tabBarBorderColor,
+          
+          height: Platform.OS === 'ios' ? 90 : 60, 
+          paddingBottom: Platform.OS === 'ios' ? 30 : 5, 
+          borderTopWidth: 1,                 // Changed from 0 so border color can show up
+          elevation: 10,                     
+          shadowColor: '#000',               
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.05,
           shadowRadius: 5,
@@ -55,6 +69,11 @@ function TabNavigator() {
         
         // Hide the header that the tab navigator adds to each screen
         headerShown: false,
+        
+        // Optional: Style the screen container background itself if needed
+        contentStyle: {
+            backgroundColor: colors.background,
+        }
       })}
     >
       {/* Tab Screens */}
