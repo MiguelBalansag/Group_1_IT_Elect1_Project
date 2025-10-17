@@ -3,22 +3,20 @@ import {
     View,
     Text,
     TextInput,
-    TouchableOpacity, // Used for custom buttons
+    TouchableOpacity, 
     Alert,
     ActivityIndicator,
     StyleSheet,
-    SafeAreaView, // To ensure content fits under the notch/status bar
+    SafeAreaView, 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-// --- SIMULATED DATA & LOGIC ---
 
-// 🚨 Mock function: Replace this with your actual API call
 const registerUser = async (name, email, password) => {
-    // Simulate a network delay
+    
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // 🚨 Replace this dummy validation with your actual server response logic
+    
     if (name.length > 2 && email.includes('@') && password.length >= 4) {
         return { success: true };
     } else {
@@ -26,14 +24,13 @@ const registerUser = async (name, email, password) => {
     }
 };
 
-// --- FLASH GENIUS REGISTER SCREEN ---
 
 const RegisterScreen = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false); // For the "Show" button
+    const [showPassword, setShowPassword] = useState(false); 
 
     const navigation = useNavigation();
 
@@ -49,7 +46,7 @@ const RegisterScreen = () => {
 
             if (result.success) {
                 Alert.alert('Success', 'Registration complete! You are now logged in.');
-                // Use replace to move to the main app after successful registration
+
                 navigation.replace('HomeTabs');
             } else {
                 Alert.alert('Registration Failed', result.error);
@@ -65,15 +62,14 @@ const RegisterScreen = () => {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
 
-                {/* App Logo/Title (Top center) */}
+               
                 <View style={styles.logoContainer}>
                     <Text style={styles.logoText}>Flash<Text style={styles.logoGenius}>Genius</Text></Text>
                 </View>
 
-                {/* Welcome Message */}
+                
                 <Text style={styles.welcomeText}>Create Account</Text>
 
-                {/* Username Input */}
                 <View style={styles.inputWrapper}>
                     <TextInput
                         style={styles.input}
@@ -84,8 +80,7 @@ const RegisterScreen = () => {
                         editable={!isLoading}
                     />
                 </View>
-
-                {/* Email Input */}
+                
                 <View style={styles.inputWrapper}>
                     <TextInput
                         style={styles.input}
@@ -98,7 +93,6 @@ const RegisterScreen = () => {
                     />
                 </View>
 
-                {/* Password Input with "Show" button */}
                 <View style={[styles.inputWrapper, styles.passwordWrapper]}>
                     <TextInput
                         style={styles.input}
@@ -119,7 +113,6 @@ const RegisterScreen = () => {
                     </TouchableOpacity>
                 </View>
 
-                {/* Register Button */}
                 <TouchableOpacity
                     style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
                     onPress={handleRegister}
@@ -132,7 +125,6 @@ const RegisterScreen = () => {
                     )}
   </TouchableOpacity>
 
-                {/* Login Link (at the bottom) */}
                 <View style={styles.loginContainer}>
                     <Text style={styles.loginText}>Already have an account?</Text>
                     <TouchableOpacity
@@ -148,7 +140,6 @@ const RegisterScreen = () => {
     );
 };
 
-// --- STYLESHEET (Replicated from Login Screen) ---
 
 const styles = StyleSheet.create({
     safeArea: {
@@ -226,7 +217,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     
-    // Styling for the bottom Login link
+    
     loginContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
