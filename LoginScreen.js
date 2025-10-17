@@ -3,24 +3,20 @@ import {
     View,
     Text,
     TextInput,
-    TouchableOpacity, // Used for custom buttons
+    TouchableOpacity, 
     Alert,
     ActivityIndicator,
     StyleSheet,
     Image,
-    SafeAreaView, // To ensure content fits under the notch/status bar
+    SafeAreaView, 
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-// --- SIMULATED DATA & LOGIC ---
-
-// Simulate an asynchronous network request delay
 const authenticateUser = async (email, password) => {
-    // Simulate network latency (2 seconds)
+
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Simple dummy authentication logic
     if (email === 'group1@gmail.com' && password === '1234') {
         return { success: true, user: { name: 'Alex' } };
     } else {
@@ -28,13 +24,11 @@ const authenticateUser = async (email, password) => {
     }
 };
 
-// --- FLASH GENIUS LOGIN SCREEN ---
-
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false); // State for the "Show" button
+    const [showPassword, setShowPassword] = useState(false); 
 
     const navigation = useNavigation();
 
@@ -50,7 +44,6 @@ const LoginScreen = () => {
             const result = await authenticateUser(email, password);
 
             if (result.success) {
-                // In a real app, this would replace the AuthStack with the TabNavigator
                 navigation.replace('HomeTabs'); 
             } else {
                 Alert.alert('Login Failed', result.error);
@@ -63,20 +56,14 @@ const LoginScreen = () => {
     };
 
     return (
-        // Use SafeAreaView for better layout on modern phones
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
-                
-                {/* App Logo/Title (Top center) */}
                 <View style={styles.logoContainer}>
                     <Text style={styles.logoText}>Flash<Text style={styles.logoGenius}>Genius</Text></Text>
-                    {/*  */}
                 </View>
 
-                {/* Welcome Back Text */}
                 <Text style={styles.welcomeText}>Welcome Back!</Text>
 
-                {/* Email Input */}
                 <View style={styles.inputWrapper}>
                     <TextInput
                         style={styles.input}
@@ -89,7 +76,6 @@ const LoginScreen = () => {
                     />
                 </View>
 
-                {/* Password Input with "Show" button */}
                 <View style={[styles.inputWrapper, styles.passwordWrapper]}>
                     <TextInput
                         style={styles.input}
@@ -104,13 +90,11 @@ const LoginScreen = () => {
                         onPress={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
                     >
-                        {/* The 'Show' text and circular icon */}
                         <Text style={styles.showText}>Show</Text>
                         <MaterialCommunityIcons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#777" />
                     </TouchableOpacity>
                 </View>
 
-                {/* Login Button */}
                 <TouchableOpacity
                     style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
                     onPress={handleLogin}
@@ -123,7 +107,6 @@ const LoginScreen = () => {
                     )}
                 </TouchableOpacity>
                 
-                {/* Sign Up Link (at the bottom) */}
                 <View style={styles.signUpContainer}>
                     <Text style={styles.signUpText}>Don't have you account?</Text>
                     <TouchableOpacity
@@ -139,7 +122,6 @@ const LoginScreen = () => {
     );
 };
 
-// --- STYLESHEET ---
 
 const styles = StyleSheet.create({
     safeArea: {
@@ -149,7 +131,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: 30,
-        paddingTop: '20%', // Spacing from the top
+        paddingTop: '20%', 
     },
     logoContainer: {
         alignItems: 'center',
@@ -219,7 +201,7 @@ const styles = StyleSheet.create({
     linkButton: {
         alignSelf: 'flex-end',
         marginTop: 15,
-        marginBottom: 100, // Push the sign-up link down
+        marginBottom: 100, 
     },
     forgotPasswordText: {
         color: '#555',
@@ -240,7 +222,7 @@ const styles = StyleSheet.create({
     },
     signUpLink: {
         fontSize: 14,
-        color: '#2A5DFF', // Matching the primary button color
+        color: '#2A5DFF', 
         fontWeight: 'bold',
     },
 });
