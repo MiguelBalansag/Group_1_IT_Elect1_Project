@@ -18,19 +18,19 @@ import { useTheme } from '../ThemeContext';
 const ProfileScreen = () => {
     const navigation = useNavigation();
     const { theme, colors, toggleTheme } = useTheme(); 
-    const isDarkMode = theme === 'dark'; // Derived state from context
+    const isDarkMode = theme === 'dark'; 
 
     const [allowNotifications, setAllowNotifications] = useState(true); 
     const [inputLink, setInputLink] = useState(''); 
     const [profileImage, setProfileImage] = useState(null); 
 
     const userData = {
-        name: 'Alex Johnson',
-        email: 'alex.johnson@email.com',
+        name: 'Group1',
+        email: 'group1@gmail.com',
     };
 
     const handleEditProfile = async () => {
-        // Request permission to access media library
+    
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
             Alert.alert(
@@ -91,7 +91,7 @@ const ProfileScreen = () => {
                 <View style={{ width: 24 }} /> 
             </View>
             
-            {/* Profile Picture and Name */}
+        
             <View style={styles.profileInfo}>
                 {profileImage ? (
                     <Image source={{ uri: profileImage }} style={styles.profileImage} />
@@ -100,16 +100,16 @@ const ProfileScreen = () => {
                 )}
                 
                 <TouchableOpacity onPress={handleEditProfile} style={[styles.editButton, { backgroundColor: colors.primary }]}>
-                    {/* FIX 1: Ensure text is white for contrast against the primary button color */}
+               
                     <Text style={[styles.editButtonText, { color: 'black' }]}>Edit</Text>
                 </TouchableOpacity>
                 <Text style={[styles.userName, { color: colors.text }]}>{userData.name}</Text>
                 <Text style={[styles.userEmail, { color: colors.subtext }]}>{userData.email}</Text>
             </View>
 
-            {/* Settings Options: Apply dynamic card and border colors */}
+        
             <View style={[styles.settingsSection, { backgroundColor: colors.card, shadowColor: isDarkMode ? '#FFF' : '#000' }]}>
-                {/* 1. Link Input */}
+              
                 <View style={[styles.settingItemContainer, { borderBottomColor: colors.border }]}>
                     <MaterialCommunityIcons name="link-variant" size={24} color={colors.subtext} style={styles.settingIcon} />
                     <TextInput
@@ -123,12 +123,12 @@ const ProfileScreen = () => {
         autoCorrect={false}
                     />
                     <TouchableOpacity onPress={handleInputLink} style={[styles.linkSubmitButton, { backgroundColor: colors.primary }]}>
-                        {/* FIX 2: Correct property to 'color' and ensure it's white for contrast */}
+                  
                         <Text style={[styles.linkSubmitButtonText, { color: 'black' }]}>Go</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* 2. Notification Preferences */}
+              
                 <TouchableOpacity onPress={handleNotificationSettings} style={[styles.settingItem, { borderBottomColor: colors.border }]}>
                     <View style={styles.settingItemLeft}>
                         <MaterialCommunityIcons name="bell-outline" size={24} color={colors.subtext} style={styles.settingIcon} />
@@ -143,7 +143,7 @@ const ProfileScreen = () => {
                     />
                 </TouchableOpacity>
 
-                {/* 3. App Theme (Critical update for toggle) */}
+              
                 <TouchableOpacity onPress={handleToggleAppTheme} style={[styles.settingItem, { borderBottomWidth: 0 }]}>
                     <View style={styles.settingItemLeft}>
                         <MaterialCommunityIcons name="theme-light-dark" size={24} color={colors.subtext} style={styles.settingIcon} />
@@ -159,23 +159,23 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
             </View>
 
-            {/* Logout Button */}
+        
             <TouchableOpacity onPress={handleLogout} style={[styles.logoutButton, { backgroundColor: colors.logout }]}>
-                {/* Ensure Logout text is white for contrast */}
+                
                 <Text style={[styles.logoutButtonText, { color: '#FFFFFF' }]}>Logout</Text>
             </TouchableOpacity>
         </View>
     );
 };
 
-// ... (rest of the StyleSheet remains the same, as the color overrides are now done inline)
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: 20,
         paddingTop: Platform.OS === 'ios' ? 50 : 30,
     },
-    // --- Header ---
+
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
     },
-    // --- Profile Info ---
+  
     profileInfo: {
         alignItems: 'center',
         marginBottom: 30,
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     editButtonText: {
-        // Kept for font size/weight, color is overridden inline
+      
         fontSize: 12,
         fontWeight: '600',
     },
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     userEmail: {
         fontSize: 16,
     },
-    // --- Settings Section ---
+   
     settingsSection: {
         borderRadius: 12,
         marginBottom: 25,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
         marginLeft: 10,
     },
     linkSubmitButtonText: {
-        // Kept for font size/weight, color is overridden i
+
         fontWeight: '600',
         fontSize: 15,
     },
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     settingSwitch: {
         transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }], 
     },
-    // --- Logout Button ---
+
     logoutButton: {
         padding: 15,
         borderRadius: 10,
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
         elevation: 3,
     },
     logoutButtonText: {
-        // Kept for font size/weight, color is overridden inline
+       
         fontSize: 18,
         fontWeight: '600',
     },
