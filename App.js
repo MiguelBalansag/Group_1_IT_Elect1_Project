@@ -11,7 +11,6 @@ import { ThemeProvider } from './ThemeContext';
 
 const Stack = createStackNavigator();
 
-
 const HomeTabsWithContext = () => (
   
   <DeckProvider>
