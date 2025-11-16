@@ -5,7 +5,6 @@ import ProfileScreen from './screens/ProfileScreen';
 import TabNavigator from './TabNavigator'; 
 import LoginScreen from './LoginScreen';
 import RegisterScreen from './RegisterScreen';
-import Splash from './FirstPage/Splash'; 
 import FlashcardStudyScreen from './screens/FlashcardStudyScreen';
 import { DeckProvider } from './DeckContext'; 
 import { ThemeProvider } from './ThemeContext';
@@ -23,10 +22,9 @@ function App() {
     <ThemeProvider>
       <NavigationContainer>
         <Stack.Navigator 
-          initialRouteName="Splash"
+          initialRouteName="Login"
           screenOptions={{ headerShown: false }} 
         >
-          <Stack.Screen name="Splash" component={Splash} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />  
           <Stack.Screen name="Profile" component={ProfileScreen} />
