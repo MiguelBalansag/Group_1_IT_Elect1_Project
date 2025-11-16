@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, Platform, ActivityIndicator, RefreshControl } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit'; 
 import { useDecks } from '../DeckContext'; 
@@ -43,10 +43,18 @@ const ProgressScreen = () => {
     const { colors } = useTheme();
     const [studyData, setStudyData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
         loadStudyData();
     }, []);
+      const onRefresh = () => {
+    setRefreshing(true);
+    // 🔄 Put your refresh logic here (e.g., re-fetch stats from API or state update)
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000); // simulate refresh delay
+  };
 
     const loadStudyData = async () => {
         try {
@@ -247,7 +255,10 @@ const ProgressScreen = () => {
     }
 
     return (
-        <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
+        <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}
+          refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }>
             <Text style={[styles.header, { color: colors.text }]}>Your Progress</Text>
 
             {/* Stats Card */}
@@ -265,7 +276,6 @@ const ProgressScreen = () => {
                         Study Streak: <Text style={[styles.statValue, { color: colors.text }]}>{studyData?.streak || 0} Days</Text>
                     </Text>
                 </View>
-                
                 <View style={styles.statRow}>
                     <MaterialCommunityIcons name="check-circle" size={20} color="#4CAF50" />
                     <Text style={[styles.statText, { color: colors.subtext }]}>

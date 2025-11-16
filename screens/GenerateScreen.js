@@ -16,7 +16,7 @@ import Slider from '@react-native-community/slider';
 import { useNavigation } from '@react-navigation/native';
 import { useDecks } from '../DeckContext';
 import { useTheme } from '../ThemeContext';
-import { generateFlashcardsWithGemini, listAvailableModels } from '../geminiService';
+import { generateFlashcardsWithGemini} from '../geminiService';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 
@@ -33,18 +33,6 @@ const GenerateScreen = () => {
     
     const navigation = useNavigation();
     const { addDeck } = useDecks();
-
-    // Test available models when component loads
-    useEffect(() => {
-        const checkModels = async () => {
-            console.log("🔍 Checking available AI models...");
-            const models = await listAvailableModels();
-            if (models) {
-                console.log("✅ Available models found:", models);
-            }
-        };
-        checkModels();
-    }, []);
 
     const handleSelectFile = async () => {
         if (isLoading) return;

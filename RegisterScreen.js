@@ -61,8 +61,8 @@ const RegisterScreen = () => {
                 notifications: true
             });
 
-            Alert.alert('Success', 'Registration complete! You are now logged in.');
-            navigation.replace('HomeTabs');
+            Alert.alert('Success', 'Registration complete! You can now log in.');
+            navigation.replace('Login');
 
         } catch (error) {
             console.error('Registration Error:', error);

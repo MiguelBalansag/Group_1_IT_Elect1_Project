@@ -291,7 +291,7 @@ const ProfileScreen = () => {
                     <MaterialCommunityIcons name="download" size={24} color={colors.subtext} style={styles.settingIcon} />
                     <TextInput
                         style={[styles.linkInput, { color: colors.text }]}
-                        placeholder="Enter deck code (e.g., FC-A1B2C3D4)"
+                        placeholder="Enter deck code (e.g., FC-XXXXXXXX)"
                         placeholderTextColor={colors.subtext}
                         value={inputLink}
                         onChangeText={setInputLink}
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     },
     linkInput: {
         flex: 1,
-        fontSize: 16,
+        fontSize: 12,
         marginLeft: 10,
     },
     linkSubmitButton: {
