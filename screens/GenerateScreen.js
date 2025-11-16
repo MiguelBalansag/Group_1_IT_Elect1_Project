@@ -16,7 +16,7 @@ import Slider from '@react-native-community/slider';
 import { useNavigation } from '@react-navigation/native';
 import { useDecks } from '../DeckContext';
 import { useTheme } from '../ThemeContext';
-import { generateFlashcardsWithGemini} from '../geminiService';
+import { generateFlashcardsWithGemini, listAvailableModels } from '../geminiService';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 
@@ -184,13 +184,8 @@ const GenerateScreen = () => {
 
             await Promise.all(flashcardsPromises);
 
-            // Add to local context for immediate UI update
-            await addDeck({
-                deckName: deckName,
-                fileName: selectedFileName,
-                numberOfCards: flashcards.length,
-                status: 'New'
-            });
+            // Don't add to local context - Firestore listener will handle it automatically
+            // The DeckContext is already listening to Firestore changes
 
             Alert.alert(
                 "Success!", 
@@ -330,6 +325,20 @@ const GenerateScreen = () => {
             <Text style={[styles.footerNote, { color: colors.subtext }]}>
                 ⚡ Powered by Google Gemini AI
             </Text>
+
+            <View style={styles.banner}>
+      <Text style={styles.title}>⚠️ System Notice</Text>
+      <Text style={styles.message}>
+        PDF and Word files are not supported for flashcard generation and will result in an error.
+      </Text>
+      <Text style={styles.message}>
+        Please convert your PDF or Word file into a plain .txt file using WPS or another file editor.
+      </Text>
+      <Text style={styles.message}>
+        Renaming the file in your File Manager is not recommended, as it may corrupt the file and alter its content.
+      </Text>
+    </View>
+
         </View>
     );
 };
@@ -441,7 +450,7 @@ const styles = StyleSheet.create({
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
-        marginTop: 30,
+        marginTop: 5,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
@@ -462,6 +471,25 @@ const styles = StyleSheet.create({
         marginTop: 15,
         fontStyle: 'italic',
     },
+     banner: {
+    backgroundColor: '#fff3cd', // soft warning yellow
+    borderColor: '#ffeeba',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 15,
+    margin: 10,
+  },
+  title: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#856404',
+    marginBottom: 8,
+  },
+  message: {
+    fontSize: 14,
+    color: '#856404',
+    marginBottom: 4,
+  },
 });
 
 export default GenerateScreen;

@@ -4,17 +4,23 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Animated,
+    TextInput,
     Dimensions,
     Alert,
     ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../ThemeContext';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const genAI = new GoogleGenerativeAI("AIzaSyDxKtKTLlHxRPcuPy0GR7B9tUiXcorbs4M");
 
 const FlashcardStudyScreen = ({ route, navigation }) => {
     const { deck } = route.params;
@@ -22,9 +28,14 @@ const FlashcardStudyScreen = ({ route, navigation }) => {
     
     const [flashcards, setFlashcards] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isFlipped, setIsFlipped] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [flipAnimation] = useState(new Animated.Value(0));
+    const [userAnswer, setUserAnswer] = useState('');
+    const [isChecking, setIsChecking] = useState(false);
+    const [showResult, setShowResult] = useState(false);
+    const [isCorrect, setIsCorrect] = useState(false);
+    const [feedback, setFeedback] = useState('');
+    const [masteredCards, setMasteredCards] = useState(new Set());
+    const [showAnswer, setShowAnswer] = useState(false);
 
     useEffect(() => {
         loadFlashcards();
@@ -50,64 +61,138 @@ const FlashcardStudyScreen = ({ route, navigation }) => {
         }
     };
 
-    const handleFlip = () => {
-        Animated.spring(flipAnimation, {
-            toValue: isFlipped ? 0 : 180,
-            friction: 8,
-            tension: 10,
-            useNativeDriver: true,
-        }).start();
-        setIsFlipped(!isFlipped);
+    const checkAnswer = async () => {
+        if (!userAnswer.trim()) {
+            Alert.alert('Empty Answer', 'Please type your answer first.');
+            return;
+        }
+
+        setIsChecking(true);
+
+        try {
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+            
+            const prompt = `You are a flashcard answer checker. Compare the student's answer with the correct answer and determine if it's correct.
+
+Question: ${flashcards[currentIndex].question}
+Correct Answer: ${flashcards[currentIndex].answer}
+Student's Answer: ${userAnswer}
+
+Respond ONLY with a JSON object in this exact format:
+{
+  "correct": true or false,
+  "feedback": "Brief explanation (1-2 sentences)"
+}
+
+Rules:
+- Mark as correct if the student's answer captures the main idea, even if wording differs
+- Be lenient with minor spelling or grammar mistakes
+- Be strict with factual errors or missing key information`;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+            
+            // Clean and parse JSON
+            let cleanedText = text.trim();
+            cleanedText = cleanedText.replace(/```json\s*/g, '');
+            cleanedText = cleanedText.replace(/```\s*/g, '');
+            cleanedText = cleanedText.trim();
+            
+            const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error('Invalid AI response');
+            }
+            
+            const evaluation = JSON.parse(jsonMatch[0]);
+            
+            setIsCorrect(evaluation.correct);
+            setFeedback(evaluation.feedback);
+            setShowResult(true);
+            
+            // Track mastered cards
+            if (evaluation.correct) {
+                setMasteredCards(prev => new Set([...prev, flashcards[currentIndex].id]));
+            }
+            
+        } catch (error) {
+            console.error('Error checking answer:', error);
+            Alert.alert('Error', 'Could not check your answer. Please try again.');
+        } finally {
+            setIsChecking(false);
+        }
     };
 
     const handleNext = () => {
         if (currentIndex < flashcards.length - 1) {
             setCurrentIndex(currentIndex + 1);
-            setIsFlipped(false);
-            flipAnimation.setValue(0);
+            setUserAnswer('');
+            setShowResult(false);
+            setShowAnswer(false);
+            setIsCorrect(false);
+            setFeedback('');
         } else {
+            finishStudySession();
+        }
+    };
+
+    const handleSkip = () => {
+        handleNext();
+    };
+
+    const toggleShowAnswer = () => {
+        setShowAnswer(!showAnswer);
+    };
+
+    const finishStudySession = async () => {
+        try {
+            const masteryPercentage = Math.round((masteredCards.size / flashcards.length) * 100);
+            
+            // Update deck mastery in Firestore
+            const deckRef = doc(db, 'decks', deck.id);
+            await updateDoc(deckRef, {
+                mastery: masteryPercentage,
+                progress: 100,
+                updatedAt: new Date().toISOString(),
+            });
+
+            // Save study session for progress tracking
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            await addDoc(collection(db, 'studySessions'), {
+                userId: auth.currentUser.uid,
+                deckId: deck.id,
+                deckTitle: deck.title,
+                date: today.toISOString(),
+                cardsStudied: flashcards.length,
+                correctAnswers: masteredCards.size,
+                masteryAchieved: masteryPercentage,
+                timestamp: new Date().toISOString(),
+            });
+
             Alert.alert(
-                'Deck Complete!',
-                `You've reviewed all ${flashcards.length} cards in this deck.`,
+                'Study Session Complete! 🎉',
+                `Great job!\n\nCorrect: ${masteredCards.size} / ${flashcards.length}\nMastery: ${masteryPercentage}%`,
                 [
-                    { text: 'Review Again', onPress: () => {
-                        setCurrentIndex(0);
-                        setIsFlipped(false);
-                        flipAnimation.setValue(0);
-                    }},
+                    { 
+                        text: 'Study Again', 
+                        onPress: () => {
+                            setCurrentIndex(0);
+                            setMasteredCards(new Set());
+                            setUserAnswer('');
+                            setShowResult(false);
+                            setShowAnswer(false);
+                        }
+                    },
                     { text: 'Go Back', onPress: () => navigation.goBack() }
                 ]
             );
+        } catch (error) {
+            console.error('Error updating mastery:', error);
+            Alert.alert('Error', 'Could not save your progress');
         }
     };
-
-    const handlePrevious = () => {
-        if (currentIndex > 0) {
-            setCurrentIndex(currentIndex - 1);
-            setIsFlipped(false);
-            flipAnimation.setValue(0);
-        }
-    };
-
-    const frontInterpolate = flipAnimation.interpolate({
-        inputRange: [0, 180],
-        outputRange: ['0deg', '180deg'],
-    });
-
-    const backInterpolate = flipAnimation.interpolate({
-        inputRange: [0, 180],
-        outputRange: ['180deg', '360deg'],
-    });
-
-    const frontOpacity = flipAnimation.interpolate({
-        inputRange: [89, 90],
-        outputRange: [1, 0],
-    });
-
-    const backOpacity = flipAnimation.interpolate({
-        inputRange: [89, 90],
-        outputRange: [0, 1],
-    });
 
     if (loading) {
         return (
@@ -148,7 +233,10 @@ const FlashcardStudyScreen = ({ route, navigation }) => {
     const currentCard = flashcards[currentIndex];
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <KeyboardAvoidingView 
+            style={[styles.container, { backgroundColor: colors.background }]}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -163,115 +251,161 @@ const FlashcardStudyScreen = ({ route, navigation }) => {
                 <Text style={[styles.progressText, { color: colors.text }]}>
                     Card {currentIndex + 1} of {flashcards.length}
                 </Text>
-                <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
-                    <View 
-                        style={[
-                            styles.progressFill, 
-                            { 
-                                width: `${((currentIndex + 1) / flashcards.length) * 100}%`,
-                                backgroundColor: colors.primary 
-                            }
-                        ]} 
-                    />
+                <View style={styles.scoreContainer}>
+                    <MaterialCommunityIcons name="check-circle" size={16} color="#4CAF50" />
+                    <Text style={[styles.scoreText, { color: colors.text }]}>
+                        {masteredCards.size} correct
+                    </Text>
                 </View>
             </View>
 
-            {/* Flashcard */}
-            <View style={styles.cardContainer}>
-                <TouchableOpacity 
-                    activeOpacity={0.9} 
-                    onPress={handleFlip}
-                    style={styles.cardTouchable}
-                >
-                    {/* Front of card */}
-                    <Animated.View 
-                        style={[
-                            styles.card,
-                            { backgroundColor: colors.card },
-                            {
-                                transform: [{ rotateY: frontInterpolate }],
-                                opacity: frontOpacity,
-                            }
-                        ]}
-                    >
-                        <View style={styles.cardContent}>
-                            <Text style={[styles.cardLabel, { color: colors.primary }]}>QUESTION</Text>
-                            <Text style={[styles.cardText, { color: colors.text }]}>
-                                {currentCard.question}
-                            </Text>
-                            <Text style={[styles.tapHint, { color: colors.subtext }]}>
-                                Tap to see answer
-                            </Text>
-                        </View>
-                    </Animated.View>
+            <ScrollView 
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+            >
+                {/* Question Card */}
+                <View style={[styles.questionCard, { backgroundColor: colors.card }]}>
+                    <Text style={[styles.cardLabel, { color: colors.primary }]}>QUESTION</Text>
+                    <Text style={[styles.questionText, { color: colors.text }]}>
+                        {currentCard.question}
+                    </Text>
+                </View>
 
-                    {/* Back of card */}
-                    <Animated.View 
+                {/* Answer Input */}
+                <View style={styles.answerSection}>
+                    <Text style={[styles.sectionLabel, { color: colors.text }]}>Your Answer:</Text>
+                    <TextInput
                         style={[
-                            styles.card,
-                            styles.cardBack,
-                            { backgroundColor: colors.primary },
-                            {
-                                transform: [{ rotateY: backInterpolate }],
-                                opacity: backOpacity,
+                            styles.answerInput,
+                            { 
+                                backgroundColor: colors.card,
+                                borderColor: colors.border,
+                                color: colors.text 
                             }
                         ]}
-                    >
-                        <View style={styles.cardContent}>
-                            <Text style={[styles.cardLabel, { color: 'rgba(255,255,255,0.9)' }]}>ANSWER</Text>
-                            <Text style={[styles.cardText, { color: '#FFFFFF' }]}>
+                        placeholder="Type your answer here..."
+                        placeholderTextColor={colors.subtext}
+                        value={userAnswer}
+                        onChangeText={setUserAnswer}
+                        multiline
+                        editable={!showResult}
+                    />
+
+                    {/* Check Answer Button */}
+                    {!showResult && (
+                        <TouchableOpacity
+                            style={[
+                                styles.checkButton,
+                                { backgroundColor: colors.primary },
+                                isChecking && styles.checkButtonDisabled
+                            ]}
+                            onPress={checkAnswer}
+                            disabled={isChecking}
+                        >
+                            {isChecking ? (
+                                <ActivityIndicator color="#FFFFFF" />
+                            ) : (
+                                <>
+                                    <MaterialCommunityIcons name="check-circle" size={20} color="#FFFFFF" />
+                                    <Text style={styles.checkButtonText}>Check Answer</Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Show Answer Button */}
+                    {!showResult && (
+                        <TouchableOpacity
+                            style={[styles.revealButton, { borderColor: colors.border }]}
+                            onPress={toggleShowAnswer}
+                        >
+                            <MaterialCommunityIcons 
+                                name={showAnswer ? "eye-off" : "eye"} 
+                                size={18} 
+                                color={colors.primary} 
+                            />
+                            <Text style={[styles.revealButtonText, { color: colors.primary }]}>
+                                {showAnswer ? 'Hide' : 'Show'} Correct Answer
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Correct Answer (if revealed) */}
+                    {showAnswer && !showResult && (
+                        <View style={[styles.correctAnswerBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                            <Text style={[styles.correctAnswerLabel, { color: colors.subtext }]}>
+                                Correct Answer:
+                            </Text>
+                            <Text style={[styles.correctAnswerText, { color: colors.text }]}>
                                 {currentCard.answer}
                             </Text>
-                            <Text style={[styles.tapHint, { color: 'rgba(255,255,255,0.7)' }]}>
-                                Tap to see question
-                            </Text>
                         </View>
-                    </Animated.View>
-                </TouchableOpacity>
-            </View>
+                    )}
 
-            {/* Navigation Buttons */}
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity 
-                    style={[
-                        styles.navButton,
-                        { backgroundColor: colors.card, borderColor: colors.border },
-                        currentIndex === 0 && styles.navButtonDisabled
-                    ]}
-                    onPress={handlePrevious}
-                    disabled={currentIndex === 0}
-                >
-                    <MaterialCommunityIcons 
-                        name="chevron-left" 
-                        size={32} 
-                        color={currentIndex === 0 ? colors.subtext : colors.primary} 
-                    />
-                    <Text style={[
-                        styles.navButtonText, 
-                        { color: currentIndex === 0 ? colors.subtext : colors.text }
-                    ]}>
-                        Previous
-                    </Text>
-                </TouchableOpacity>
+                    {/* Result */}
+                    {showResult && (
+                        <View style={[
+                            styles.resultBox,
+                            { 
+                                backgroundColor: isCorrect ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)',
+                                borderColor: isCorrect ? '#4CAF50' : '#F44336'
+                            }
+                        ]}>
+                            <View style={styles.resultHeader}>
+                                <MaterialCommunityIcons 
+                                    name={isCorrect ? "check-circle" : "close-circle"} 
+                                    size={32} 
+                                    color={isCorrect ? '#4CAF50' : '#F44336'} 
+                                />
+                                <Text style={[
+                                    styles.resultTitle,
+                                    { color: isCorrect ? '#4CAF50' : '#F44336' }
+                                ]}>
+                                    {isCorrect ? 'Correct!' : 'Not Quite'}
+                                </Text>
+                            </View>
+                            
+                            <Text style={[styles.feedbackText, { color: colors.text }]}>
+                                {feedback}
+                            </Text>
 
-                <TouchableOpacity 
-                    style={[
-                        styles.navButton,
-                        { backgroundColor: colors.primary }
-                    ]}
-                    onPress={handleNext}
-                >
-                    <Text style={[styles.navButtonText, { color: '#FFFFFF' }]}>
-                        {currentIndex === flashcards.length - 1 ? 'Finish' : 'Next'}
-                    </Text>
-                    <MaterialCommunityIcons 
-                        name="chevron-right" 
-                        size={32} 
-                        color="#FFFFFF" 
-                    />
-                </TouchableOpacity>
+                            <View style={[styles.correctAnswerBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                                <Text style={[styles.correctAnswerLabel, { color: colors.subtext }]}>
+                                    Correct Answer:
+                                </Text>
+                                <Text style={[styles.correctAnswerText, { color: colors.text }]}>
+                                    {currentCard.answer}
+                                </Text>
+                            </View>
+                        </View>
+                    )}
+                </View>
+            </ScrollView>
+
+            {/* Bottom Buttons */}
+            <View style={styles.bottomButtons}>
+                {showResult ? (
+                    <TouchableOpacity
+                        style={[styles.nextButton, { backgroundColor: colors.primary }]}
+                        onPress={handleNext}
+                    >
+                        <Text style={styles.nextButtonText}>
+                            {currentIndex === flashcards.length - 1 ? 'Finish' : 'Next Card'}
+                        </Text>
+                        <MaterialCommunityIcons name="chevron-right" size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        style={[styles.skipButton, { borderColor: colors.border }]}
+                        onPress={handleSkip}
+                    >
+                        <Text style={[styles.skipButtonText, { color: colors.text }]}>Skip</Text>
+                        <MaterialCommunityIcons name="arrow-right" size={20} color={colors.subtext} />
+                    </TouchableOpacity>
+                )}
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 };
 
@@ -310,94 +444,167 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     progressContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: 20,
         paddingVertical: 10,
     },
     progressText: {
         fontSize: 14,
         fontWeight: '600',
-        marginBottom: 8,
-        textAlign: 'center',
     },
-    progressBar: {
-        height: 8,
-        borderRadius: 4,
-        overflow: 'hidden',
-    },
-    progressFill: {
-        height: '100%',
-        borderRadius: 4,
-    },
-    cardContainer: {
-        flex: 1,
-        justifyContent: 'center',
+    scoreContainer: {
+        flexDirection: 'row',
         alignItems: 'center',
+        gap: 5,
+    },
+    scoreText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
         paddingHorizontal: 20,
+        paddingBottom: 20,
     },
-    cardTouchable: {
-        width: SCREEN_WIDTH - 40,
-        height: SCREEN_HEIGHT * 0.5,
-    },
-    card: {
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        borderRadius: 20,
-        backfaceVisibility: 'hidden',
+    questionCard: {
+        padding: 25,
+        borderRadius: 15,
+        marginBottom: 25,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
-    },
-    cardBack: {
-        position: 'absolute',
-    },
-    cardContent: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 30,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     cardLabel: {
         fontSize: 12,
         fontWeight: '700',
         letterSpacing: 2,
+        marginBottom: 15,
+    },
+    questionText: {
+        fontSize: 20,
+        fontWeight: '600',
+        lineHeight: 28,
+    },
+    answerSection: {
         marginBottom: 20,
     },
-    cardText: {
-        fontSize: 22,
+    sectionLabel: {
+        fontSize: 16,
         fontWeight: '600',
-        textAlign: 'center',
-        lineHeight: 32,
+        marginBottom: 10,
     },
-    tapHint: {
-        position: 'absolute',
-        bottom: 30,
-        fontSize: 14,
-        fontStyle: 'italic',
+    answerInput: {
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: 15,
+        fontSize: 16,
+        minHeight: 100,
+        textAlignVertical: 'top',
+        marginBottom: 15,
     },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingBottom: 30,
-        gap: 15,
-    },
-    navButton: {
-        flex: 1,
+    checkButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 15,
+        padding: 16,
         borderRadius: 12,
+        gap: 8,
+        marginBottom: 10,
+    },
+    checkButtonDisabled: {
+        opacity: 0.7,
+    },
+    checkButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    revealButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        gap: 6,
+        marginBottom: 15,
+    },
+    revealButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    correctAnswerBox: {
+        padding: 15,
+        borderRadius: 12,
+        borderWidth: 1,
+        marginTop: 10,
+    },
+    correctAnswerLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        marginBottom: 8,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    correctAnswerText: {
+        fontSize: 16,
+        lineHeight: 22,
+    },
+    resultBox: {
+        padding: 20,
+        borderRadius: 15,
         borderWidth: 2,
-        gap: 5,
+        marginTop: 15,
     },
-    navButtonDisabled: {
-        opacity: 0.5,
+    resultHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 15,
     },
-    navButtonText: {
+    resultTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+    },
+    feedbackText: {
+        fontSize: 16,
+        lineHeight: 24,
+        marginBottom: 15,
+    },
+    bottomButtons: {
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        paddingBottom: 30,
+    },
+    nextButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        borderRadius: 12,
+        gap: 8,
+    },
+    nextButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    skipButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        gap: 8,
+    },
+    skipButtonText: {
         fontSize: 16,
         fontWeight: '600',
     },

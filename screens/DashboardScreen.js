@@ -45,7 +45,11 @@ const DashboardScreen = ({ navigation }) => {
     const DeckCard = ({ deck }) => {
         const masteryColor = deck.mastery >= 75 ? '#4CAF50' : deck.mastery >= 50 ? '#FFC107' : '#F44336';
 
-        const handleOptions = (deck) => {
+        const handleOptions = (deck, event) => {
+            if (event) {
+                event.stopPropagation();
+            }
+            
             const deckCode = `DECK-${deck.id}`;
 
             Alert.alert(
@@ -91,6 +95,7 @@ const DashboardScreen = ({ navigation }) => {
                     shadowColor: colors.shadow,
                 }]}
                 onPress={() => navigation.navigate('FlashcardStudy', { deck })}
+                activeOpacity={0.7}
             >
                 <View style={styles.cardHeaderRow}>
                     <View style={styles.cardTitleContainer}>
@@ -101,7 +106,10 @@ const DashboardScreen = ({ navigation }) => {
                     </View>
 
                     <TouchableOpacity 
-                        onPress={() => handleOptions(deck)} 
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            handleOptions(deck, e);
+                        }} 
                         style={styles.optionsButton}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
@@ -121,13 +129,20 @@ const DashboardScreen = ({ navigation }) => {
                     </View>
                 </View>
 
+                {/* NEW PROGRESS ROW */}
                 <View style={[styles.progressRow, { borderTopColor: colors.border }]}>
-                    <Text style={[styles.progressText, { color: colors.primary }]}>
-                        {deck.status === 'Needs Review' ? 'Needs Review' : `${deck.progress}% Progress`}
-                    </Text>
-                    <Text style={[styles.progressValue, { color: colors.subtext }]}>
-                         {deck.progress}%
-                    </Text>
+                    <View style={styles.progressLeft}>
+                        <MaterialCommunityIcons 
+                            name={deck.status === 'Needs Review' ? 'alert-circle' : 'play-circle'} 
+                            size={18} 
+                            color={colors.primary} 
+                            style={styles.progressIcon}
+                        />
+                        <Text style={[styles.progressText, { color: colors.primary }]}>
+                            {deck.status === 'Needs Review' ? 'Needs Review' : 'Tap to Study'}
+                        </Text>
+                    </View>
+                    <MaterialCommunityIcons name="chevron-right" size={20} color={colors.subtext} />
                 </View>
             </TouchableOpacity>
         );
@@ -315,13 +330,17 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         marginTop: 5,
     },
+    progressLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    progressIcon: {
+        marginRight: 8,
+    },
     progressText: {
         fontSize: 14,
         fontWeight: '600',
     },
-    progressValue: {
-        fontSize: 14,
-    }
 });
 
 export default DashboardScreen;
