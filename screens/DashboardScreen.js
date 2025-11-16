@@ -46,47 +46,54 @@ const DashboardScreen = ({ navigation }) => {
         const masteryColor = deck.mastery >= 75 ? '#4CAF50' : deck.mastery >= 50 ? '#FFC107' : '#F44336';
 
         const handleOptions = (deck, event) => {
-            if (event) {
-                event.stopPropagation();
-            }
-            
-            const deckCode = `DECK-${deck.id}`;
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    // Generate a unique share code based on deck ID
+    const shareCode = `FC-${deck.id.substring(0, 8).toUpperCase()}`;
 
-            Alert.alert(
-                deck.title,
-                "Choose an action:",
-                [
-                    {
-                        text: "Share Deck",
-                        onPress: () => {
-                            Share.share({
-                                message: `Check out my flashcard deck: "${deck.title}". Use code: ${deckCode}`,
-                            });
-                        }
-                    },
-                    {
-                        text: "Remove Deck",
-                        style: 'destructive',
-                        onPress: () => {
-                            Alert.alert(
-                                "Confirm Removal",
-                                `Are you sure you want to remove ${deck.title}? This cannot be undone.`,
-                                [
-                                    { text: "Cancel", style: 'cancel' },
-                                    { 
-                                        text: "Remove", 
-                                        style: 'destructive', 
-                                        onPress: () => removeDeck(deck.id)
-                                    }
-                                ]
-                            );
-                        }
-                    },
-                    { text: "Cancel", style: 'cancel' }
-                ]
-            );
-        };
-
+    Alert.alert(
+        deck.title,
+        "Choose an action:",
+        [
+            {
+                text: "Share Deck",
+                onPress: async () => {
+                    try {
+                        await Share.share({
+                            message: `🎓 Check out my flashcard deck: "${deck.title}"\n\n` +
+                                    `📚 ${deck.cardCount} cards to help you study!\n\n` +
+                                    `Use this code to import: ${shareCode}\n\n` +
+                                    `Open FlashGenius app → Profile → Enter code`,
+                        });
+                    } catch (error) {
+                        console.error('Error sharing:', error);
+                    }
+                }
+            },
+            {
+                text: "Remove Deck",
+                style: 'destructive',
+                onPress: () => {
+                    Alert.alert(
+                        "Confirm Removal",
+                        `Are you sure you want to remove ${deck.title}? This cannot be undone.`,
+                        [
+                            { text: "Cancel", style: 'cancel' },
+                            { 
+                                text: "Remove", 
+                                style: 'destructive', 
+                                onPress: () => removeDeck(deck.id)
+                            }
+                        ]
+                    );
+                }
+            },
+            { text: "Cancel", style: 'cancel' }
+        ]
+    );
+};
         return (
             <TouchableOpacity 
                 style={[styles.card, { 
@@ -95,7 +102,6 @@ const DashboardScreen = ({ navigation }) => {
                     shadowColor: colors.shadow,
                 }]}
                 onPress={() => navigation.navigate('FlashcardStudy', { deck })}
-                activeOpacity={0.7}
             >
                 <View style={styles.cardHeaderRow}>
                     <View style={styles.cardTitleContainer}>
@@ -129,17 +135,16 @@ const DashboardScreen = ({ navigation }) => {
                     </View>
                 </View>
 
-                {/* NEW PROGRESS ROW */}
                 <View style={[styles.progressRow, { borderTopColor: colors.border }]}>
                     <View style={styles.progressLeft}>
                         <MaterialCommunityIcons 
-                            name={deck.status === 'Needs Review' ? 'alert-circle' : 'play-circle'} 
+                            name={deck.status === 'Needs Review' ? 'alert-circle' : 'progress-check'} 
                             size={18} 
                             color={colors.primary} 
                             style={styles.progressIcon}
                         />
                         <Text style={[styles.progressText, { color: colors.primary }]}>
-                            {deck.status === 'Needs Review' ? 'Needs Review' : 'Tap to Study'}
+                            {deck.status === 'Needs Review' ? 'Needs Review' : 'Ready to Study'}
                         </Text>
                     </View>
                     <MaterialCommunityIcons name="chevron-right" size={20} color={colors.subtext} />
@@ -341,6 +346,9 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '600',
     },
+    progressValue: {
+        fontSize: 14,
+    }
 });
 
 export default DashboardScreen;

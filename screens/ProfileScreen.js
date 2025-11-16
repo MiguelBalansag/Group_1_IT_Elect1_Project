@@ -8,13 +8,14 @@ import {
     TextInput,
     Alert,
     Platform,
-    Image 
+    Image,
+    ActivityIndicator
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { auth, db } from '../firebaseConfig';
 import { useTheme } from '../ThemeContext';
 
@@ -26,6 +27,7 @@ const ProfileScreen = () => {
     const [allowNotifications, setAllowNotifications] = useState(true);
     const [inputLink, setInputLink] = useState('');
     const [profileImage, setProfileImage] = useState(null);
+    const [isImporting, setIsImporting] = useState(false);
     const [userData, setUserData] = useState({
         name: 'Loading...',
         email: 'Loading...',
@@ -82,7 +84,6 @@ const ProfileScreen = () => {
         if (!result.canceled) {
             setProfileImage(result.assets[0].uri);
             
-            // Update profile image in Firestore
             try {
                 await updateDoc(doc(db, 'users', auth.currentUser.uid), {
                     profileImage: result.assets[0].uri
@@ -93,15 +94,129 @@ const ProfileScreen = () => {
         }
     };
 
-    const handleInputLink = () => {
-        Alert.alert("Input Link", `Link submitted: ${inputLink}`);
-        console.log("Link submitted:", inputLink);
+    const handleInputLink = async () => {
+        if (!inputLink.trim()) {
+            Alert.alert("Empty Code", "Please enter a deck code to import.");
+            return;
+        }
+
+        const shareCodeMatch = inputLink.trim().match(/FC-([A-Z0-9]{8})/i);
+        
+        if (shareCodeMatch) {
+            await importDeckFromCode(inputLink.trim());
+        } else {
+            Alert.alert("Invalid Code", "Please enter a valid deck code (format: FC-XXXXXXXX)");
+        }
+    };
+
+    const importDeckFromCode = async (shareCode) => {
+        setIsImporting(true);
+
+        try {
+            const deckIdPrefix = shareCode.replace('FC-', '').toLowerCase();
+            
+            console.log("Searching for deck with prefix:", deckIdPrefix);
+
+            const decksRef = collection(db, 'decks');
+            const querySnapshot = await getDocs(decksRef);
+            
+            let foundDeck = null;
+            querySnapshot.forEach((doc) => {
+                if (doc.id.toLowerCase().startsWith(deckIdPrefix)) {
+                    foundDeck = { id: doc.id, ...doc.data() };
+                }
+            });
+
+            if (!foundDeck) {
+                Alert.alert("Not Found", "Could not find a deck with this code. Please check the code and try again.");
+                setIsImporting(false);
+                return;
+            }
+
+            console.log("Found deck:", foundDeck.title);
+
+            // Check if already imported
+            const userDecksQuery = query(
+                collection(db, 'decks'),
+                where('userId', '==', auth.currentUser.uid)
+            );
+            const userDeckSnapshot = await getDocs(userDecksQuery);
+            
+            let alreadyImported = false;
+            userDeckSnapshot.forEach(doc => {
+                if (doc.data().originalDeckId === foundDeck.id) {
+                    alreadyImported = true;
+                }
+            });
+            
+            if (alreadyImported) {
+                Alert.alert("Already Imported", `You already have "${foundDeck.title}" in your library.`);
+                setIsImporting(false);
+                return;
+            }
+
+            // Import the deck
+            const newDeckData = {
+                userId: auth.currentUser.uid,
+                title: foundDeck.title,
+                source: foundDeck.source,
+                cardCount: foundDeck.cardCount,
+                mastery: 0,
+                progress: 0,
+                status: 'Imported',
+                originalDeckId: foundDeck.id,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+
+            const newDeckRef = await addDoc(collection(db, 'decks'), newDeckData);
+
+            // Copy flashcards
+            const flashcardsQuery = query(
+                collection(db, 'flashcards'),
+                where('deckId', '==', foundDeck.id)
+            );
+            const flashcardsSnapshot = await getDocs(flashcardsQuery);
+            
+            console.log(`Copying ${flashcardsSnapshot.docs.length} flashcards...`);
+
+            const flashcardPromises = flashcardsSnapshot.docs.map(doc => {
+                const cardData = doc.data();
+                return addDoc(collection(db, 'flashcards'), {
+                    deckId: newDeckRef.id,
+                    userId: auth.currentUser.uid,
+                    question: cardData.question,
+                    answer: cardData.answer,
+                    mastered: false,
+                    reviewCount: 0,
+                    createdAt: new Date().toISOString(),
+                });
+            });
+
+            await Promise.all(flashcardPromises);
+
+            Alert.alert(
+                "Success! 🎉",
+                `"${foundDeck.title}" has been imported with ${foundDeck.cardCount} cards!`,
+                [
+                    { text: "OK", onPress: () => {
+                        setInputLink('');
+                        navigation.navigate('HomeTabs', { screen: 'Home' });
+                    }}
+                ]
+            );
+
+        } catch (error) {
+            console.error("Import error:", error);
+            Alert.alert("Import Failed", error.message || "Could not import the deck. Please try again.");
+        } finally {
+            setIsImporting(false);
+        }
     };
 
     const handleNotificationToggle = async (value) => {
         setAllowNotifications(value);
         
-        // Update notification preference in Firestore
         try {
             await updateDoc(doc(db, 'users', auth.currentUser.uid), {
                 notifications: value
@@ -114,7 +229,6 @@ const ProfileScreen = () => {
     const handleToggleAppTheme = async () => {
         toggleTheme();
         
-        // Update theme preference in Firestore
         try {
             await updateDoc(doc(db, 'users', auth.currentUser.uid), {
                 theme: !isDarkMode ? 'dark' : 'light'
@@ -174,19 +288,31 @@ const ProfileScreen = () => {
 
             <View style={[styles.settingsSection, { backgroundColor: colors.card, shadowColor: isDarkMode ? '#FFF' : '#000' }]}>
                 <View style={[styles.settingItemContainer, { borderBottomColor: colors.border }]}>
-                    <MaterialCommunityIcons name="link-variant" size={24} color={colors.subtext} style={styles.settingIcon} />
+                    <MaterialCommunityIcons name="download" size={24} color={colors.subtext} style={styles.settingIcon} />
                     <TextInput
                         style={[styles.linkInput, { color: colors.text }]}
-                        placeholder="Enter link (URL/code) to generate from"
+                        placeholder="Enter deck code (e.g., FC-A1B2C3D4)"
                         placeholderTextColor={colors.subtext}
                         value={inputLink}
                         onChangeText={setInputLink}
-                        keyboardType="url"
-                        autoCapitalize="none"
+                        autoCapitalize="characters"
                         autoCorrect={false}
+                        editable={!isImporting}
                     />
-                    <TouchableOpacity onPress={handleInputLink} style={[styles.linkSubmitButton, { backgroundColor: colors.primary }]}>
-                        <Text style={[styles.linkSubmitButtonText, { color: 'black' }]}>Go</Text>
+                    <TouchableOpacity 
+                        onPress={handleInputLink} 
+                        style={[
+                            styles.linkSubmitButton, 
+                            { backgroundColor: colors.primary },
+                            isImporting && styles.linkSubmitButtonDisabled
+                        ]}
+                        disabled={isImporting}
+                    >
+                        {isImporting ? (
+                            <ActivityIndicator size="small" color="black" />
+                        ) : (
+                            <Text style={[styles.linkSubmitButtonText, { color: 'black' }]}>Import</Text>
+                        )}
                     </TouchableOpacity>
                 </View>
 
@@ -255,9 +381,6 @@ const styles = StyleSheet.create({
         height: 100,
         borderRadius: 50,
         backgroundColor: '#E0E0E0',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 10,
     },
     editButton: {
         position: 'absolute',
@@ -312,6 +435,12 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 8,
         marginLeft: 10,
+        minWidth: 70,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    linkSubmitButtonDisabled: {
+        opacity: 0.6,
     },
     linkSubmitButtonText: {
         fontWeight: '600',

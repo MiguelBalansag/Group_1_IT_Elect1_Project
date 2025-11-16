@@ -14,8 +14,8 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../ThemeContext';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { collection, query, where, getDocs, doc, updateDoc, addDoc } from 'firebase/firestore';
+import { db , auth} from '../firebaseConfig';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -35,7 +35,6 @@ const FlashcardStudyScreen = ({ route, navigation }) => {
     const [isCorrect, setIsCorrect] = useState(false);
     const [feedback, setFeedback] = useState('');
     const [masteredCards, setMasteredCards] = useState(new Set());
-    const [showAnswer, setShowAnswer] = useState(false);
 
     useEffect(() => {
         loadFlashcards();
@@ -128,7 +127,6 @@ Rules:
             setCurrentIndex(currentIndex + 1);
             setUserAnswer('');
             setShowResult(false);
-            setShowAnswer(false);
             setIsCorrect(false);
             setFeedback('');
         } else {
@@ -138,10 +136,6 @@ Rules:
 
     const handleSkip = () => {
         handleNext();
-    };
-
-    const toggleShowAnswer = () => {
-        setShowAnswer(!showAnswer);
     };
 
     const finishStudySession = async () => {
@@ -182,7 +176,6 @@ Rules:
                             setMasteredCards(new Set());
                             setUserAnswer('');
                             setShowResult(false);
-                            setShowAnswer(false);
                         }
                     },
                     { text: 'Go Back', onPress: () => navigation.goBack() }
@@ -307,40 +300,11 @@ Rules:
                                 <ActivityIndicator color="#FFFFFF" />
                             ) : (
                                 <>
-                                    <MaterialCommunityIcons name="check-circle" size={20} color="#FFFFFF" />
+                                    <MaterialCommunityIcons name="check-circle" size={20} color="#000000" />
                                     <Text style={styles.checkButtonText}>Check Answer</Text>
                                 </>
                             )}
                         </TouchableOpacity>
-                    )}
-
-                    {/* Show Answer Button */}
-                    {!showResult && (
-                        <TouchableOpacity
-                            style={[styles.revealButton, { borderColor: colors.border }]}
-                            onPress={toggleShowAnswer}
-                        >
-                            <MaterialCommunityIcons 
-                                name={showAnswer ? "eye-off" : "eye"} 
-                                size={18} 
-                                color={colors.primary} 
-                            />
-                            <Text style={[styles.revealButtonText, { color: colors.primary }]}>
-                                {showAnswer ? 'Hide' : 'Show'} Correct Answer
-                            </Text>
-                        </TouchableOpacity>
-                    )}
-
-                    {/* Correct Answer (if revealed) */}
-                    {showAnswer && !showResult && (
-                        <View style={[styles.correctAnswerBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                            <Text style={[styles.correctAnswerLabel, { color: colors.subtext }]}>
-                                Correct Answer:
-                            </Text>
-                            <Text style={[styles.correctAnswerText, { color: colors.text }]}>
-                                {currentCard.answer}
-                            </Text>
-                        </View>
                     )}
 
                     {/* Result */}
@@ -393,7 +357,7 @@ Rules:
                         <Text style={styles.nextButtonText}>
                             {currentIndex === flashcards.length - 1 ? 'Finish' : 'Next Card'}
                         </Text>
-                        <MaterialCommunityIcons name="chevron-right" size={24} color="#FFFFFF" />
+                        <MaterialCommunityIcons name="chevron-right" size={24} color="#000000" />
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity
@@ -521,22 +485,8 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
     checkButtonText: {
-        color: '#FFFFFF',
+        color: '#000000',
         fontSize: 16,
-        fontWeight: '600',
-    },
-    revealButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 12,
-        borderRadius: 12,
-        borderWidth: 1,
-        gap: 6,
-        marginBottom: 15,
-    },
-    revealButtonText: {
-        fontSize: 14,
         fontWeight: '600',
     },
     correctAnswerBox: {
@@ -591,7 +541,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     nextButtonText: {
-        color: '#FFFFFF',
+        color: '#000000',
         fontSize: 16,
         fontWeight: '600',
     },
