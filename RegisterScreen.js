@@ -11,19 +11,9 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-
-const registerUser = async (name, email, password) => {
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    
-    if (name.length > 2 && email.includes('@') && password.length >= 4) {
-        return { success: true };
-    } else {
-        return { success: false, error: 'Please check your details (Name > 2, Password > 3).' };
-    }
-};
-
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from './firebaseConfig';
 
 const RegisterScreen = () => {
     const [name, setName] = useState('');
@@ -39,20 +29,57 @@ const RegisterScreen = () => {
             Alert.alert('Error', 'Please fill out all fields.');
             return;
         }
+
+        if (name.length <= 2) {
+            Alert.alert('Error', 'Name must be more than 2 characters.');
+            return;
+        }
+
+        if (password.length < 6) {
+            Alert.alert('Error', 'Password must be at least 6 characters.');
+            return;
+        }
+
         setLoading(true);
 
         try {
-            const result = await registerUser(name, email, password);
+            // Create user with Firebase Authentication
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
 
-            if (result.success) {
-                Alert.alert('Success', 'Registration complete! You are now logged in.');
+            // Update user profile with display name
+            await updateProfile(user, {
+                displayName: name
+            });
 
-                navigation.replace('HomeTabs');
-            } else {
-                Alert.alert('Registration Failed', result.error);
-            }
+            // Create user document in Firestore
+            await setDoc(doc(db, 'users', user.uid), {
+                name: name,
+                email: email,
+                createdAt: new Date().toISOString(),
+                theme: 'light',
+                notifications: true
+            });
+
+            Alert.alert('Success', 'Registration complete! You are now logged in.');
+            navigation.replace('HomeTabs');
+
         } catch (error) {
-            Alert.alert('Network Error', 'Could not connect to the server.');
+            console.error('Registration Error:', error);
+            
+            let errorMessage = 'Could not register. Please try again.';
+            
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = 'This email is already registered.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Invalid email address.';
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = 'Password is too weak.';
+            } else if (error.code === 'auth/network-request-failed') {
+                errorMessage = 'Network error. Please check your connection.';
+            }
+            
+            Alert.alert('Registration Failed', errorMessage);
         } finally {
             setLoading(false);
         }
@@ -61,13 +88,10 @@ const RegisterScreen = () => {
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
-
-               
                 <View style={styles.logoContainer}>
                     <Text style={styles.logoText}>Flash<Text style={styles.logoGenius}>Genius</Text></Text>
                 </View>
 
-                
                 <Text style={styles.welcomeText}>Create Account</Text>
 
                 <View style={styles.inputWrapper}>
@@ -107,7 +131,6 @@ const RegisterScreen = () => {
                         onPress={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
                     >
-                      
                        <Text style={styles.showText}>Show</Text>
                         <MaterialCommunityIcons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#777" />
                     </TouchableOpacity>
@@ -123,7 +146,7 @@ const RegisterScreen = () => {
                     ) : (
                         <Text style={styles.registerButtonText}>Register</Text>
                     )}
-  </TouchableOpacity>
+                </TouchableOpacity>
 
                 <View style={styles.loginContainer}>
                     <Text style={styles.loginText}>Already have an account?</Text>
@@ -134,12 +157,10 @@ const RegisterScreen = () => {
                         <Text style={styles.loginLink}> Login</Text>
                     </TouchableOpacity>
                 </View>
-
             </View>
         </SafeAreaView>
     );
 };
-
 
 const styles = StyleSheet.create({
     safeArea: {
@@ -162,7 +183,7 @@ const styles = StyleSheet.create({
         color: '#000000',
     },
     logoGenius: {
-        color: '#2A5DFF', // Blue color
+        color: '#2A5DFF',
     },
     welcomeText: {
         fontSize: 24,
@@ -216,8 +237,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    
-    
     loginContainer: {
         flexDirection: 'row',
         justifyContent: 'center',

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "488294594642",
+    "project_id": "flashgenius-e06dd",
+    "storage_bucket": "flashgenius-e06dd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488294594642:android:fd5c721eab8eff7c3ec78b",
+        "android_client_info": {
+          "package_name": "com.flashgenius"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyg0RCdt1CLBasSwxshsUenXe2FQxdl5s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

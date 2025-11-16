@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -12,25 +12,57 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import * as ImagePicker from 'expo-image-picker'; 
-import { useTheme } from '../ThemeContext'; 
+import * as ImagePicker from 'expo-image-picker';
+import { signOut } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { auth, db } from '../firebaseConfig';
+import { useTheme } from '../ThemeContext';
 
 const ProfileScreen = () => {
     const navigation = useNavigation();
-    const { theme, colors, toggleTheme } = useTheme(); 
-    const isDarkMode = theme === 'dark'; 
+    const { theme, colors, toggleTheme } = useTheme();
+    const isDarkMode = theme === 'dark';
 
-    const [allowNotifications, setAllowNotifications] = useState(true); 
-    const [inputLink, setInputLink] = useState(''); 
-    const [profileImage, setProfileImage] = useState(null); 
+    const [allowNotifications, setAllowNotifications] = useState(true);
+    const [inputLink, setInputLink] = useState('');
+    const [profileImage, setProfileImage] = useState(null);
+    const [userData, setUserData] = useState({
+        name: 'Loading...',
+        email: 'Loading...',
+    });
 
-    const userData = {
-        name: 'Group1',
-        email: 'group1@gmail.com',
-    };
+    // Fetch user data from Firestore
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                if (auth.currentUser) {
+                    const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+                    if (userDoc.exists()) {
+                        const data = userDoc.data();
+                        setUserData({
+                            name: data.name || auth.currentUser.displayName || 'User',
+                            email: data.email || auth.currentUser.email,
+                        });
+                        setAllowNotifications(data.notifications !== false);
+                        if (data.profileImage) {
+                            setProfileImage(data.profileImage);
+                        }
+                    } else {
+                        setUserData({
+                            name: auth.currentUser.displayName || 'User',
+                            email: auth.currentUser.email,
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        };
+
+        fetchUserData();
+    }, []);
 
     const handleEditProfile = async () => {
-    
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
             Alert.alert(
@@ -42,13 +74,22 @@ const ProfileScreen = () => {
 
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true, 
-            aspect: [1, 1],      
+            allowsEditing: true,
+            aspect: [1, 1],
             quality: 1,
         });
 
         if (!result.canceled) {
             setProfileImage(result.assets[0].uri);
+            
+            // Update profile image in Firestore
+            try {
+                await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                    profileImage: result.assets[0].uri
+                });
+            } catch (error) {
+                console.error('Error updating profile image:', error);
+            }
         }
     };
 
@@ -57,12 +98,31 @@ const ProfileScreen = () => {
         console.log("Link submitted:", inputLink);
     };
 
-    const handleNotificationSettings = () => {
-        Alert.alert("Notification Settings", "Toggles handled directly on this screen.");
+    const handleNotificationToggle = async (value) => {
+        setAllowNotifications(value);
+        
+        // Update notification preference in Firestore
+        try {
+            await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                notifications: value
+            });
+        } catch (error) {
+            console.error('Error updating notification preference:', error);
+        }
     };
 
-    const handleToggleAppTheme = () => {
-        toggleTheme(); 
+    const handleToggleAppTheme = async () => {
+        toggleTheme();
+        
+        // Update theme preference in Firestore
+        try {
+            await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                theme: !isDarkMode ? 'dark' : 'light'
+            });
+        } catch (error) {
+            console.error('Error updating theme preference:', error);
+        }
+        
         Alert.alert("Theme Change", `App Theme changed to ${!isDarkMode ? 'Dark' : 'Light'} Mode.`);
     };
 
@@ -72,26 +132,32 @@ const ProfileScreen = () => {
             "Are you sure you want to log out?",
             [
                 { text: "Cancel", style: "cancel" },
-                { text: "Logout", onPress: () => {
-                    navigation.navigate('Login'); 
-                    console.log("User logged out");
-                }}
+                { 
+                    text: "Logout", 
+                    onPress: async () => {
+                        try {
+                            await signOut(auth);
+                            navigation.replace('Login');
+                        } catch (error) {
+                            console.error('Logout error:', error);
+                            Alert.alert('Error', 'Could not log out. Please try again.');
+                        }
+                    }
+                }
             ]
         );
     };
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
-            {/* Header: Apply dynamic text/icon color */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: colors.text }]}>Your Profile</Text>
-                <View style={{ width: 24 }} /> 
+                <View style={{ width: 24 }} />
             </View>
             
-        
             <View style={styles.profileInfo}>
                 {profileImage ? (
                     <Image source={{ uri: profileImage }} style={styles.profileImage} />
@@ -100,16 +166,13 @@ const ProfileScreen = () => {
                 )}
                 
                 <TouchableOpacity onPress={handleEditProfile} style={[styles.editButton, { backgroundColor: colors.primary }]}>
-               
                     <Text style={[styles.editButtonText, { color: 'black' }]}>Edit</Text>
                 </TouchableOpacity>
                 <Text style={[styles.userName, { color: colors.text }]}>{userData.name}</Text>
                 <Text style={[styles.userEmail, { color: colors.subtext }]}>{userData.email}</Text>
             </View>
 
-        
             <View style={[styles.settingsSection, { backgroundColor: colors.card, shadowColor: isDarkMode ? '#FFF' : '#000' }]}>
-              
                 <View style={[styles.settingItemContainer, { borderBottomColor: colors.border }]}>
                     <MaterialCommunityIcons name="link-variant" size={24} color={colors.subtext} style={styles.settingIcon} />
                     <TextInput
@@ -120,30 +183,27 @@ const ProfileScreen = () => {
                         onChangeText={setInputLink}
                         keyboardType="url"
                         autoCapitalize="none"
-        autoCorrect={false}
+                        autoCorrect={false}
                     />
                     <TouchableOpacity onPress={handleInputLink} style={[styles.linkSubmitButton, { backgroundColor: colors.primary }]}>
-                  
                         <Text style={[styles.linkSubmitButtonText, { color: 'black' }]}>Go</Text>
                     </TouchableOpacity>
                 </View>
 
-              
-                <TouchableOpacity onPress={handleNotificationSettings} style={[styles.settingItem, { borderBottomColor: colors.border }]}>
+                <TouchableOpacity style={[styles.settingItem, { borderBottomColor: colors.border }]}>
                     <View style={styles.settingItemLeft}>
                         <MaterialCommunityIcons name="bell-outline" size={24} color={colors.subtext} style={styles.settingIcon} />
                         <Text style={[styles.settingText, { color: colors.text }]}>Notification Preferences</Text>
                     </View>
                     <Switch
                         trackColor={{ false: colors.border, true: colors.primary }}
-                        thumbColor={isDarkMode ? '#FFFFFF' : '#f4f3f4'} 
-                        onValueChange={setAllowNotifications}
+                        thumbColor={isDarkMode ? '#FFFFFF' : '#f4f3f4'}
+                        onValueChange={handleNotificationToggle}
                         value={allowNotifications}
                         style={styles.settingSwitch}
                     />
                 </TouchableOpacity>
 
-              
                 <TouchableOpacity onPress={handleToggleAppTheme} style={[styles.settingItem, { borderBottomWidth: 0 }]}>
                     <View style={styles.settingItemLeft}>
                         <MaterialCommunityIcons name="theme-light-dark" size={24} color={colors.subtext} style={styles.settingIcon} />
@@ -151,7 +211,7 @@ const ProfileScreen = () => {
                     </View>
                     <Switch
                         trackColor={{ false: colors.border, true: colors.primary }}
-                        thumbColor={isDarkMode ? '#FFFFFF' : '#f4f3f4'} 
+                        thumbColor={isDarkMode ? '#FFFFFF' : '#f4f3f4'}
                         onValueChange={handleToggleAppTheme}
                         value={isDarkMode}
                         style={styles.settingSwitch}
@@ -159,15 +219,12 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
             </View>
 
-        
             <TouchableOpacity onPress={handleLogout} style={[styles.logoutButton, { backgroundColor: colors.logout }]}>
-                
                 <Text style={[styles.logoutButtonText, { color: '#FFFFFF' }]}>Logout</Text>
             </TouchableOpacity>
         </View>
     );
 };
-
 
 const styles = StyleSheet.create({
     container: {
@@ -175,7 +232,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: Platform.OS === 'ios' ? 50 : 30,
     },
-
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -190,12 +246,11 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
     },
-  
     profileInfo: {
         alignItems: 'center',
         marginBottom: 30,
     },
-    profileImage: { 
+    profileImage: {
         width: 100,
         height: 100,
         borderRadius: 50,
@@ -207,7 +262,7 @@ const styles = StyleSheet.create({
     editButton: {
         position: 'absolute',
         bottom: 50,
-        right: '35%', 
+        right: '35%',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 20,
@@ -220,7 +275,6 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     editButtonText: {
-      
         fontSize: 12,
         fontWeight: '600',
     },
@@ -232,7 +286,6 @@ const styles = StyleSheet.create({
     userEmail: {
         fontSize: 16,
     },
-   
     settingsSection: {
         borderRadius: 12,
         marginBottom: 25,
@@ -242,7 +295,7 @@ const styles = StyleSheet.create({
         elevation: 3,
         paddingVertical: 10,
     },
-    settingItemContainer: { 
+    settingItemContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 12,
@@ -261,7 +314,6 @@ const styles = StyleSheet.create({
         marginLeft: 10,
     },
     linkSubmitButtonText: {
-
         fontWeight: '600',
         fontSize: 15,
     },
@@ -276,7 +328,7 @@ const styles = StyleSheet.create({
     settingItemLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1, 
+        flex: 1,
     },
     settingIcon: {
         marginRight: 15,
@@ -286,21 +338,19 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     settingSwitch: {
-        transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }], 
+        transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }],
     },
-
     logoutButton: {
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
-        shadowColor: '#000', 
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 3,
         elevation: 3,
     },
     logoutButtonText: {
-       
         fontSize: 18,
         fontWeight: '600',
     },

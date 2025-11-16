@@ -3,53 +3,55 @@ import {
     View,
     Text,
     TextInput,
-    TouchableOpacity, 
+    TouchableOpacity,
     Alert,
     ActivityIndicator,
     StyleSheet,
-    Image,
-    SafeAreaView, 
+    SafeAreaView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-
-const authenticateUser = async (email, password) => {
-
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    if (email === 'group1@gmail.com' && password === '1234') {
-        return { success: true, user: { name: 'Alex' } };
-    } else {
-        return { success: false, error: 'Invalid email or password.' };
-    }
-};
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from './firebaseConfig';
 
 const LoginScreen = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false); 
+    const [showPassword, setShowPassword] = useState(false);
 
     const navigation = useNavigation();
 
     const handleLogin = async () => {
         if (!email || !password) {
-            Alert.alert('Error', 'Please enter both email and password.');
+            Alert.alert('Error', 'Please fill out all fields.');
             return;
         }
 
         setLoading(true);
 
         try {
-            const result = await authenticateUser(email, password);
-
-            if (result.success) {
-                navigation.replace('HomeTabs'); 
-            } else {
-                Alert.alert('Login Failed', result.error);
-            }
+            await signInWithEmailAndPassword(auth, email, password);
+            Alert.alert('Success', 'Logged in successfully!');
+            navigation.replace('HomeTabs');
         } catch (error) {
-            Alert.alert('Network Error', 'Could not connect to the server.');
+            console.error('Login Error:', error);
+            
+            let errorMessage = 'Could not log in. Please try again.';
+            
+            if (error.code === 'auth/user-not-found') {
+                errorMessage = 'No account found with this email.';
+            } else if (error.code === 'auth/wrong-password') {
+                errorMessage = 'Incorrect password.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Invalid email address.';
+            } else if (error.code === 'auth/user-disabled') {
+                errorMessage = 'This account has been disabled.';
+            } else if (error.code === 'auth/network-request-failed') {
+                errorMessage = 'Network error. Please check your connection.';
+            }
+            
+            Alert.alert('Login Failed', errorMessage);
         } finally {
             setLoading(false);
         }
@@ -91,7 +93,11 @@ const LoginScreen = () => {
                         disabled={isLoading}
                     >
                         <Text style={styles.showText}>Show</Text>
-                        <MaterialCommunityIcons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#777" />
+                        <MaterialCommunityIcons 
+                            name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                            size={20} 
+                            color="#777" 
+                        />
                     </TouchableOpacity>
                 </View>
 
@@ -106,22 +112,20 @@ const LoginScreen = () => {
                         <Text style={styles.loginButtonText}>Login</Text>
                     )}
                 </TouchableOpacity>
-                
-                <View style={styles.signUpContainer}>
-                    <Text style={styles.signUpText}>Don't have you account?</Text>
+
+                <View style={styles.registerContainer}>
+                    <Text style={styles.registerText}>Don't have an account?</Text>
                     <TouchableOpacity
                         onPress={() => navigation.navigate('Register')}
                         disabled={isLoading}
                     >
-                        <Text style={styles.signUpLink}> Sign Up</Text>
+                        <Text style={styles.registerLink}> Register</Text>
                     </TouchableOpacity>
                 </View>
-
             </View>
         </SafeAreaView>
     );
 };
-
 
 const styles = StyleSheet.create({
     safeArea: {
@@ -131,7 +135,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: 30,
-        paddingTop: '20%', 
+        paddingTop: '20%',
     },
     logoContainer: {
         alignItems: 'center',
@@ -144,17 +148,17 @@ const styles = StyleSheet.create({
         color: '#000000',
     },
     logoGenius: {
-        color: '#2A5DFF', 
+        color: '#2A5DFF',
     },
     welcomeText: {
         fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 60,
-        marginTop: 40,
+        marginTop: 60,
+        marginBottom: 40,
         textAlign: 'center',
     },
     inputWrapper: {
-        backgroundColor: '#F7F7F7', // Light gray background
+        backgroundColor: '#F7F7F7',
         borderRadius: 10,
         marginBottom: 20,
         height: 55,
@@ -184,11 +188,11 @@ const styles = StyleSheet.create({
         marginRight: 5,
     },
     loginButton: {
-        backgroundColor: '#2A5DFF', // The dark blue color from the image
+        backgroundColor: '#2A5DFF',
         paddingVertical: 15,
         borderRadius: 10,
         alignItems: 'center',
-        marginTop: 10,
+        marginTop: 20,
     },
     loginButtonDisabled: {
         opacity: 0.7,
@@ -198,31 +202,22 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    linkButton: {
-        alignSelf: 'flex-end',
-        marginTop: 15,
-        marginBottom: 100, 
-    },
-    forgotPasswordText: {
-        color: '#555',
-        fontSize: 14,
-    },
-    signUpContainer: {
+    registerContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        position: 'absolute', 
+        position: 'absolute',
         bottom: 40,
         width: '100%',
         alignSelf: 'center',
     },
-    signUpText: {
+    registerText: {
         fontSize: 14,
         color: '#555',
     },
-    signUpLink: {
+    registerLink: {
         fontSize: 14,
-        color: '#2A5DFF', 
+        color: '#2A5DFF',
         fontWeight: 'bold',
     },
 });

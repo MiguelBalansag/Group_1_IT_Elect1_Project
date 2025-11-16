@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     View, 
     Text, 
@@ -8,11 +8,13 @@ import {
     TouchableOpacity, 
     Dimensions,
     Alert, 
-    Share 
+    Share,
+    ActivityIndicator
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons'; 
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDecks } from '../DeckContext';
-import { useTheme } from '../ThemeContext'; 
+import { useTheme } from '../ThemeContext';
+import { auth } from '../firebaseConfig';
 
 const ProgressBar = ({ progress, color, themeColors }) => {
     return (
@@ -28,14 +30,23 @@ const ProgressBar = ({ progress, color, themeColors }) => {
 };
 
 const DashboardScreen = ({ navigation }) => {
-    const { decks, removeDeck } = useDecks(); 
-    const { colors } = useTheme(); 
+    const { decks, removeDeck, loading } = useDecks();
+    const { colors } = useTheme();
     const [searchText, setSearchText] = React.useState('');
+    const [userName, setUserName] = useState('User');
+
+    useEffect(() => {
+        // Get user name from Firebase Auth
+        if (auth.currentUser) {
+            setUserName(auth.currentUser.displayName || 'User');
+        }
+    }, []);
+
     const DeckCard = ({ deck }) => {
         const masteryColor = deck.mastery >= 75 ? '#4CAF50' : deck.mastery >= 50 ? '#FFC107' : '#F44336';
 
         const handleOptions = (deck) => {
-            const deckCode = `DECK-${deck.id}`; 
+            const deckCode = `DECK-${deck.id}`;
 
             Alert.alert(
                 deck.title,
@@ -46,7 +57,6 @@ const DashboardScreen = ({ navigation }) => {
                         onPress: () => {
                             Share.share({
                                 message: `Check out my flashcard deck: "${deck.title}". Use code: ${deckCode}`,
-                                url: `yourApp.com/deck/${deckCode}` 
                             });
                         }
                     },
@@ -74,13 +84,13 @@ const DashboardScreen = ({ navigation }) => {
         };
 
         return (
-            
             <TouchableOpacity 
                 style={[styles.card, { 
                     backgroundColor: colors.card,
                     borderLeftColor: masteryColor,
                     shadowColor: colors.shadow,
                 }]}
+                onPress={() => navigation.navigate('FlashcardStudy', { deck })}
             >
                 <View style={styles.cardHeaderRow}>
                     <View style={styles.cardTitleContainer}>
@@ -93,7 +103,7 @@ const DashboardScreen = ({ navigation }) => {
                     <TouchableOpacity 
                         onPress={() => handleOptions(deck)} 
                         style={styles.optionsButton}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} 
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
                         <MaterialCommunityIcons name="dots-vertical" size={24} color={colors.subtext} />
                     </TouchableOpacity>
@@ -107,7 +117,7 @@ const DashboardScreen = ({ navigation }) => {
                             {deck.mastery}% Mastered
                         </Text>
                         
-                        <ProgressBar progress={deck.mastery} color={masteryColor} themeColors={colors} /> 
+                        <ProgressBar progress={deck.mastery} color={masteryColor} themeColors={colors} />
                     </View>
                 </View>
 
@@ -127,10 +137,19 @@ const DashboardScreen = ({ navigation }) => {
         deck.title.toLowerCase().includes(searchText.toLowerCase())
     );
 
+    if (loading) {
+        return (
+            <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[styles.loadingText, { color: colors.text }]}>Loading your decks...</Text>
+            </View>
+        );
+    }
+
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <View style={styles.header}>
-                <Text style={[styles.welcomeText, { color: colors.text }]}>Welcome, Group1!</Text>
+                <Text style={[styles.welcomeText, { color: colors.text }]}>Welcome, {userName}!</Text>
                 <TouchableOpacity style={styles.profileIcon} onPress={() => navigation.navigate('Profile')}>
                     <MaterialCommunityIcons name="account-circle-outline" size={30} color={colors.text} />
                 </TouchableOpacity>
@@ -147,12 +166,21 @@ const DashboardScreen = ({ navigation }) => {
                 />
             </View>
 
-            <ScrollView style={styles.deckList} showsVerticalScrollIndicator={false}>
-                {filteredDecks.map(deck => (
-                    <DeckCard key={deck.id} deck={deck} />
-                ))}
-            </ScrollView>
-    
+            {filteredDecks.length === 0 ? (
+                <View style={styles.emptyState}>
+                    <MaterialCommunityIcons name="cards-outline" size={80} color={colors.subtext} />
+                    <Text style={[styles.emptyText, { color: colors.text }]}>No flashcard decks yet</Text>
+                    <Text style={[styles.emptySubtext, { color: colors.subtext }]}>
+                        Tap the Generate tab to create your first deck!
+                    </Text>
+                </View>
+            ) : (
+                <ScrollView style={styles.deckList} showsVerticalScrollIndicator={false}>
+                    {filteredDecks.map(deck => (
+                        <DeckCard key={deck.id} deck={deck} />
+                    ))}
+                </ScrollView>
+            )}
         </View>
     );
 };
@@ -196,9 +224,29 @@ const styles = StyleSheet.create({
         height: 45,
         fontSize: 16,
     },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+    },
+    emptyState: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingBottom: 100,
+    },
+    emptyText: {
+        fontSize: 20,
+        fontWeight: '600',
+        marginTop: 20,
+    },
+    emptySubtext: {
+        fontSize: 14,
+        marginTop: 8,
+        textAlign: 'center',
+    },
     deckList: {
         flex: 1,
-        marginBottom: 20, 
+        marginBottom: 20,
     },
     card: {
         padding: 20,
@@ -217,7 +265,7 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     cardTitleContainer: {
-        flex: 1, 
+        flex: 1,
         paddingRight: 10,
     },
     cardTitle: {
@@ -226,7 +274,7 @@ const styles = StyleSheet.create({
     },
     cardSource: {
         fontSize: 13,
-        marginBottom: 10, 
+        marginBottom: 10,
     },
     optionsButton: {
         padding: 5,
