@@ -16,16 +16,16 @@ import { useTheme } from '../ThemeContext';
 // Import team photos
 const teamPhotos = {
       miguel: require('../assets/team/miguel.png'),
- //   janeSmith: require('../assets/team/jane-smith.jpg'),
-  //  mikeJohnson: require('../assets/team/mike-johnson.jpg'),
-      irene: require('../assets/team/irene.jpg')
-  //  davidBrown: require('../assets/team/david-brown.jpg'),
-    //emilyDavis: require('../assets/team/emily-davis.jpg'),
-    //robertMiller: require('../assets/team/robert-miller.jpg'),
-    //lisaTaylor: require('../assets/team/lisa-taylor.jpg'),
-    //jamesAnderson: require('../assets/team/james-anderson.jpg'),
-    //amyThomas: require('../assets/team/amy-thomas.jpg'),
-    //chrisWhite: require('../assets/team/chris-white.jpg'),
+ //   jezza: require('../assets/team/jane-smith.jpg'),
+      mjay: require('../assets/team/mjay.jpg'),
+      irene: require('../assets/team/irene.jpg'),
+      darwin: require('../assets/team/darwin.jpg'),
+      zayr: require('../assets/team/zayr.jpg'),
+      raynalyn: require('../assets/team/raynalyn.jpg'),
+      magno: require('../assets/team/magno.jpg'),
+      tuyor: require('../assets/team/tuyor.jpg'),
+      jaciel: require('../assets/team/amy-thomas.jpg'),
+      pesay: require('../assets/team/pesay.jpg'),
 };
 
 const AboutScreen = () => {
