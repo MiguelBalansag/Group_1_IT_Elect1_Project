@@ -48,22 +48,30 @@ const ProgressScreen = () => {
     useEffect(() => {
         loadStudyData();
     }, []);
-      const onRefresh = () => {
-    setRefreshing(true);
-    // 🔄 Put your refresh logic here (e.g., re-fetch stats from API or state update)
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000); // simulate refresh delay
-  };
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadStudyData();
+        setRefreshing(false);
+    };
 
     const loadStudyData = async () => {
         try {
             if (!auth.currentUser) {
                 setLoading(false);
+                setStudyData({
+                    dailyStats: getLast7Days().map(date => ({
+                        date,
+                        cardsStudied: 0,
+                        correctAnswers: 0
+                    })),
+                    sessions: [],
+                    streak: 0
+                });
                 return;
             }
 
-            // Try to fetch study sessions from Firestore
+            // Fetch study sessions from Firestore
             const sessionsRef = collection(db, 'studySessions');
             
             // Try query with index first
@@ -110,6 +118,7 @@ const ProgressScreen = () => {
                 sessions: [],
                 streak: 0
             });
+        } finally {
             setLoading(false);
         }
     };
@@ -137,7 +146,6 @@ const ProgressScreen = () => {
             sessions,
             streak
         });
-        setLoading(false);
     };
 
     const getLast7Days = () => {
@@ -255,10 +263,18 @@ const ProgressScreen = () => {
     }
 
     return (
-        <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}
-          refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }>
+        <ScrollView 
+            style={[styles.container, { backgroundColor: colors.background }]} 
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+                <RefreshControl 
+                    refreshing={refreshing} 
+                    onRefresh={onRefresh}
+                    tintColor={colors.primary}
+                    colors={[colors.primary]}
+                />
+            }
+        >
             <Text style={[styles.header, { color: colors.text }]}>Your Progress</Text>
 
             {/* Stats Card */}

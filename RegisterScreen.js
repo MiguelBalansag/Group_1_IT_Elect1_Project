@@ -35,8 +35,8 @@ const RegisterScreen = () => {
             return;
         }
 
-        if (password.length < 6) {
-            Alert.alert('Error', 'Password must be at least 6 characters.');
+        if (password.length < 8) {
+            Alert.alert('Error', 'Password must be at least 8 characters.');
             return;
         }
 

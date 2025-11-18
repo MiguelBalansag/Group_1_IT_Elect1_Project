@@ -24,7 +24,6 @@ const ProfileScreen = () => {
     const { theme, colors, toggleTheme } = useTheme();
     const isDarkMode = theme === 'dark';
 
-    const [allowNotifications, setAllowNotifications] = useState(true);
     const [inputLink, setInputLink] = useState('');
     const [profileImage, setProfileImage] = useState(null);
     const [isImporting, setIsImporting] = useState(false);
@@ -45,7 +44,6 @@ const ProfileScreen = () => {
                             name: data.name || auth.currentUser.displayName || 'User',
                             email: data.email || auth.currentUser.email,
                         });
-                        setAllowNotifications(data.notifications !== false);
                         if (data.profileImage) {
                             setProfileImage(data.profileImage);
                         }
@@ -214,18 +212,6 @@ const ProfileScreen = () => {
         }
     };
 
-    const handleNotificationToggle = async (value) => {
-        setAllowNotifications(value);
-        
-        try {
-            await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-                notifications: value
-            });
-        } catch (error) {
-            console.error('Error updating notification preference:', error);
-        }
-    };
-
     const handleToggleAppTheme = async () => {
         toggleTheme();
         
@@ -238,6 +224,10 @@ const ProfileScreen = () => {
         }
         
         Alert.alert("Theme Change", `App Theme changed to ${!isDarkMode ? 'Dark' : 'Light'} Mode.`);
+    };
+
+    const handleAboutUs = () => {
+        navigation.navigate('About');
     };
 
     const handleLogout = () => {
@@ -316,18 +306,15 @@ const ProfileScreen = () => {
                     </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={[styles.settingItem, { borderBottomColor: colors.border }]}>
+                <TouchableOpacity 
+                    onPress={handleAboutUs} 
+                    style={[styles.settingItem, { borderBottomColor: colors.border }]}
+                >
                     <View style={styles.settingItemLeft}>
-                        <MaterialCommunityIcons name="bell-outline" size={24} color={colors.subtext} style={styles.settingIcon} />
-                        <Text style={[styles.settingText, { color: colors.text }]}>Notification Preferences</Text>
+                        <MaterialCommunityIcons name="information-outline" size={24} color={colors.subtext} style={styles.settingIcon} />
+                        <Text style={[styles.settingText, { color: colors.text }]}>About Us</Text>
                     </View>
-                    <Switch
-                        trackColor={{ false: colors.border, true: colors.primary }}
-                        thumbColor={isDarkMode ? '#FFFFFF' : '#f4f3f4'}
-                        onValueChange={handleNotificationToggle}
-                        value={allowNotifications}
-                        style={styles.settingSwitch}
-                    />
+                    <MaterialCommunityIcons name="chevron-right" size={24} color={colors.subtext} />
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={handleToggleAppTheme} style={[styles.settingItem, { borderBottomWidth: 0 }]}>
