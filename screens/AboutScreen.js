@@ -191,7 +191,6 @@ const AboutScreen = () => {
             isLead: false,
         },
     ];
-
     const handleMemberPress = (member) => {
         setSelectedMember(member);
         setModalVisible(true);
