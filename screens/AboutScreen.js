@@ -249,7 +249,7 @@ const AboutScreen = () => {
                     <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
                         <MaterialCommunityIcons name="cards" size={40} color="#000000" />
                     </View>
-                    <Text style={[styles.appName, { color: colors.text }]}>FlashCard App</Text>
+                    <Text style={[styles.appName, { color: colors.text }]}>FlashGenius</Text>
                     <Text style={[styles.version, { color: colors.subtext }]}>Version 1.0.0</Text>
                     <Text style={[styles.description, { color: colors.text }]}>
                         A powerful and intuitive flashcard study app designed to help students master their subjects through active recall and spaced repetition.
@@ -299,7 +299,7 @@ const AboutScreen = () => {
                 <View style={[styles.card, { backgroundColor: colors.card }]}>
                     <View style={styles.sectionHeader}>
                         <MaterialCommunityIcons name="account-group" size={24} color={colors.primary} />
-                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Development Team</Text>
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Submitted by: </Text>
                     </View>
                     <Text style={[styles.teamSubtitle, { color: colors.subtext }]}>
                         Tap on any member to learn more about them
@@ -312,6 +312,18 @@ const AboutScreen = () => {
                     <View style={styles.teamGrid}>
                         {teamMembers.slice(1).map(member => renderTeamMember(member))}
                     </View>
+
+                    <View style={styles.sectionHeader}>
+                        <MaterialCommunityIcons name="account-group" size={24} color={colors.primary} />
+                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Submitted to: </Text>
+                    </View>
+                    <Text style={[styles.lteamSubtitle, { color: colors.subtext }]}>
+                        Jay Ian F. Camelotes
+                    </Text>
+                    <Text style={[styles.ateamSubtitle, { color: colors.subtext }]}>
+                        IT Elect1
+                    </Text>
+                    
                 </View>
 
                 {/* Footer */}
@@ -493,6 +505,19 @@ const styles = StyleSheet.create({
     teamSubtitle: {
         fontSize: 14,
         marginBottom: 20,
+        textAlign: 'center',
+    },
+    lteamSubtitle: {
+        fontSize: 24,
+        fontWeight: '600',
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    ateamSubtitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 20,
+        marginTop: -15,
         textAlign: 'center',
     },
     leadMember: {
